@@ -1,0 +1,39 @@
+---
+# ---------------------------------------------------------
+# 1. Install Alacritty (macOS)
+# ---------------------------------------------------------
+- name: Install Alacritty via Homebrew Cask
+  community.general.homebrew_cask:
+    name: alacritty
+    state: present
+  when: ansible_os_family == 'Darwin'
+  tags: [alacritty, install, macos]
+
+# ---------------------------------------------------------
+# 2. Install Alacritty (Ubuntu)
+# ---------------------------------------------------------
+- block:
+    - name: Add Alacritty PPA repository
+      ansible.builtin.apt_repository:
+        repo: 'ppa:aslatter/ppa'
+        state: present
+        update_cache: yes
+
+    - name: Install Alacritty via APT
+      ansible.builtin.apt:
+        name: alacritty
+        state: present
+  become: true
+  when: ansible_os_family == 'Debian'
+  tags: [alacritty, install, ubuntu]
+
+# ---------------------------------------------------------
+# 3. Post-Install: Desktop Integration (Ubuntu only)
+# ---------------------------------------------------------
+- name: Set Alacritty as default terminal emulator (Ubuntu)
+  become: true
+  ansible.builtin.alternatives:
+    name: x-terminal-emulator
+    path: /usr/bin/alacritty
+  when: ansible_os_family == 'Debian'
+  tags: [alacritty, config]

@@ -1,0 +1,43 @@
+---
+# ---------------------------------------------------------
+# 1. Install Neovim (macOS)
+# ---------------------------------------------------------
+- name: Install Neovim via Homebrew
+  community.general.homebrew:
+    name: neovim
+    state: present
+  when: ansible_os_family == 'Darwin'
+  tags: [install, neovim, macos]
+
+# ---------------------------------------------------------
+# 2. Install Neovim (Ubuntu) - GitHub Stable AppImage
+# ---------------------------------------------------------
+- block:
+    - name: Ensure FUSE dependency is installed for AppImage execution
+      ansible.builtin.apt:
+        # Ubuntu 24.04 requires libfuse2t64 (or libfuse2 alias) to run AppImages natively
+        name: libfuse2t64
+        state: present
+
+    - name: Download latest stable Neovim AppImage
+      ansible.builtin.get_url:
+        url: "https://github.com/neovim/neovim/releases/download/stable/nvim.appimage"
+        dest: "/usr/local/bin/nvim"
+        mode: '0755'
+        # get_url natively uses ETag/Last-Modified headers to achieve O(1) idempotency.
+        # It will only download the ~30MB binary if the stable tag on GitHub updates.
+  become: true
+  when: ansible_os_family == 'Debian'
+  tags: [install, neovim, ubuntu]
+
+# ---------------------------------------------------------
+# 3. Install Global LSP Toolchain (via fnm)
+# ---------------------------------------------------------
+- name: Install Neovim LSP dependencies securely via fnm context
+  ansible.builtin.shell:
+    cmd: >
+      {{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest
+      npm install -g neovim intelephense typescript typescript-language-server
+      prettier emmet-ls vscode-langservers-extracted blade-formatter
+  changed_when: false
+  tags: [install, neovim, lsp, npm]

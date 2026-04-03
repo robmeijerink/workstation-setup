@@ -1,0 +1,93 @@
+---
+- name: RobMeijerink Workstation Setup
+  hosts: localhost
+  connection: local
+  become: false
+
+  tasks:
+    # =========================================================
+    # PHASE 1: INSTALLATION & INFRASTRUCTURE (001-099)
+    # =========================================================
+
+    - name: 001 - OS Base Setup
+      ansible.builtin.import_tasks: tasks/001-os-base.yml
+      tags: [install, base]
+
+    - name: 002 - Runtime Node.js (via fnm)
+      ansible.builtin.import_tasks: tasks/002-node.yml
+      tags: [install, node]
+
+    - name: 003 - Security Bitwarden
+      ansible.builtin.import_tasks: tasks/003-bitwarden.yml
+      tags: [install, security, bitwarden]
+
+    - name: 004 - Security SSH (Bitwarden Agent)
+      ansible.builtin.import_tasks: tasks/004-ssh.yml
+      tags: [install, security, ssh]
+
+    - name: 005 - Security GPG
+      ansible.builtin.import_tasks: tasks/005-gpg.yml
+      tags: [install, security, gpg]
+
+    - name: 006 - Install Alacritty Terminal
+      ansible.builtin.import_tasks: tasks/006-alacritty.yml
+      tags: [install, alacritty, terminal]
+
+    - name: 007 - Install Nerd Font
+      ansible.builtin.import_tasks: tasks/007-fonts.yml
+      tags: [install, fonts]
+
+    - name: 008 - Virtualization Docker & Colima
+      ansible.builtin.import_tasks: tasks/008-docker.yml
+      tags: [install, docker]
+
+    - name: 009 - Install DEV Tools and programming languages
+      ansible.builtin.import_tasks: tasks/010-dev-tools.yml
+      tags: [install, dev, programming]
+
+    - name: 010 - Install Neovim Config Dependencies
+      ansible.builtin.import_tasks: tasks/010-neovim-deps.yml
+      tags: [install, neovim]
+
+    - name: 050 - Install Neovim
+      ansible.builtin.import_tasks: tasks/050-neovim.yml
+      tags: [install, neovim]
+
+    - name: 055 - Install Neovim LSP & Mason
+      ansible.builtin.import_tasks: tasks/055-neovim-lsp.yml
+      tags: [install, neovim, lsp]
+
+    # =========================================================
+    # PHASE 2: PERSONAL CONFIGURATION (100+)
+    # =========================================================
+
+    - name: 100 - Shell Zsh & Zap Plugins
+      ansible.builtin.import_tasks: tasks/100-zsh-setup.yml
+      tags: [config, zsh]
+
+    - name: 150 - Dotfiles Clone and Stow
+      ansible.builtin.import_tasks: tasks/150-dotfiles.yml
+      tags: [config, dotfiles]
+
+    # ---------------------------------------------------------
+    # Final Step: System Reboot Handler
+    # ---------------------------------------------------------
+    - name: Check if a reboot is required (Ubuntu)
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+      when: ansible_os_family == 'Debian'
+      tags: [always]
+
+    - name: Prompt for reboot if system changes were made
+      ansible.builtin.pause:
+        prompt: "System requires a reboot to apply all changes (Docker groups/macOS settings). Reboot now? (y/n)"
+      register: reboot_prompt
+      when: (reboot_required_file.stat.exists is defined and reboot_required_file.stat.exists) or (ansible_os_family == 'Darwin')
+      tags: [always]
+
+    - name: Rebooting machine...
+      ansible.builtin.reboot:
+      become: true
+      when: reboot_prompt.user_input | lower == 'y'
+      tags: [always]

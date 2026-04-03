@@ -1,0 +1,40 @@
+---
+# ---------------------------------------------------------
+# 1. Preparation: Remove Default OS Blockers
+# ---------------------------------------------------------
+- name: Remove default OS files to prevent script conflicts
+  ansible.builtin.file:
+    path: "{{ lookup('env', 'HOME') }}/{{ item }}"
+    state: absent
+  # Only remove if it's a regular file, not already a symlink
+  when: not (lookup('ansible.builtin.pipe', 'test -L ' + lookup('env', 'HOME') + '/' + item + ' && echo "link" || echo "file"') == "link")
+  loop:
+    - .zshrc
+    - .bashrc
+    - .profile
+  tags: [config, dotfiles, cleanup]
+
+# ---------------------------------------------------------
+# 2. Clone Dotfiles Repository
+# ---------------------------------------------------------
+- name: Clone dotfiles repository from GitHub
+  ansible.builtin.git:
+    repo: "git@github.com:robmeijerink/dotfiles.git"
+    dest: "{{ lookup('env', 'HOME') }}/.dotfiles"
+    version: main
+    accept_hostkey: yes
+  register: dotfiles_repo
+  tags: [config, dotfiles]
+
+# ---------------------------------------------------------
+# 3. Execute Legacy Setup Script
+# ---------------------------------------------------------
+- name: Run dotfiles setup script
+  ansible.builtin.shell:
+    cmd: "./setup.sh"
+    chdir: "{{ lookup('env', 'HOME') }}/.dotfiles"
+    executable: /bin/bash
+  # Optimization: only run if the repo was just cloned or updated
+  # or use 'changed_when: true' to always ensure symlinks are correct
+  changed_when: dotfiles_repo.changed
+  tags: [config, dotfiles, script]

@@ -1,0 +1,27 @@
+---
+# ---------------------------------------------------------
+# 1. Install Zap Plugin Manager
+# ---------------------------------------------------------
+- name: Install Zap plugin manager
+  ansible.builtin.shell:
+    cmd: "zsh <(curl -s https://raw.githubusercontent.com/zap-zsh/zap/master/install.zsh) --branch release-v1 --keep"
+    executable: /bin/bash
+  args:
+    creates: "{{ lookup('env', 'HOME') }}/.local/share/zap/zap.zsh"
+  tags: [zsh, productivity]
+
+# ---------------------------------------------------------
+# 2. Configure Zsh as default shell
+# ---------------------------------------------------------
+- name: Determine exact path to Zsh binary
+  ansible.builtin.command: which zsh
+  register: zsh_location
+  changed_when: false
+  tags: [zsh, config]
+
+- name: Set Zsh as the default shell
+  ansible.builtin.user:
+    name: "{{ lookup('env', 'USER') }}"
+    shell: "{{ zsh_location.stdout }}"
+  become: true
+  tags: [zsh, config]

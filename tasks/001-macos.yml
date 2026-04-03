@@ -1,0 +1,44 @@
+---
+# ---------------------------------------------------------
+# 1. Install Base System Dependencies (macOS)
+# ---------------------------------------------------------
+- name: Ensure Homebrew is up to date and install core CLI tools
+  community.general.homebrew:
+    name:
+      - curl
+      - git
+      - stow
+      - tmux
+      - fzf
+      - jq
+      - yq
+      - zoxide
+      - bat
+      - eza
+      - lazygit
+      - git-delta
+      - gum
+      - ms-jpq/sad/sad
+      - chafa
+      - php-code-sniffer
+      - zsh
+      - htop
+    state: present
+    update_homebrew: yes
+  when: ansible_os_family == 'Darwin'
+  tags: [install, base, macos]
+
+# ---------------------------------------------------------
+# 2. System Level Tweak: macOS Key Repeat
+# ---------------------------------------------------------
+# macOS natively blocks holding down keys (like j/k) to display
+# an accent menu. This disables that feature globally to allow
+# smooth navigation within Neovim.
+- name: Disable macOS ApplePressAndHoldEnabled for Neovim navigation
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: ApplePressAndHoldEnabled
+    type: bool
+    value: false
+  when: ansible_os_family == 'Darwin'
+  tags: [config, base, macos, nvim]

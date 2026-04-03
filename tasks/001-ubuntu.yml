@@ -1,0 +1,62 @@
+---
+# ---------------------------------------------------------
+# 1. Install Base System Requirements via APT
+# ---------------------------------------------------------
+- name: Install core system requirements for Ubuntu and Homebrew
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - procps
+      - curl
+      - file
+      - git
+      - ca-certificates
+      - xdotool
+      - zsh
+      - htop
+    state: present
+    update_cache: yes
+  become: true
+  tags: [install, base, ubuntu]
+
+# ---------------------------------------------------------
+# 2. Bootstrap Homebrew on Linux
+# ---------------------------------------------------------
+- name: Check if Homebrew is already installed
+  ansible.builtin.stat:
+    path: /home/linuxbrew/.linuxbrew/bin/brew
+  register: linuxbrew_check
+  tags: [install, base, brew]
+
+- name: Install Homebrew (Linuxbrew) silently
+  ansible.builtin.shell:
+    cmd: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  environment:
+    NONINTERACTIVE: "1"
+  when: not linuxbrew_check.stat.exists
+  tags: [install, base, brew]
+
+# ---------------------------------------------------------
+# 3. Install Developer CLI Tools via Homebrew
+# ---------------------------------------------------------
+- name: Install modern CLI tools via Homebrew (100% parity with macOS)
+  community.general.homebrew:
+    name:
+      - stow
+      - tmux
+      - fzf
+      - jq
+      - yq
+      - zoxide
+      - bat
+      - eza
+      - lazygit
+      - git-delta
+      - gum
+      - sad
+      - chafa
+      - php-code-sniffer
+    state: present
+    update_homebrew: yes
+    path: /home/linuxbrew/.linuxbrew/bin
+  tags: [install, base, brew, tools]

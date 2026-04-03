@@ -1,0 +1,26 @@
+---
+# ---------------------------------------------------------
+# 1. Install Global NPM Dependencies for Neovim LSP
+# ---------------------------------------------------------
+- name: Install Neovim LSP dependencies securely via fnm context
+  ansible.builtin.shell:
+    # We use fnm to execute npm in the isolated user-space LTS environment.
+    # This prevents global permission issues and avoids sudo entirely.
+    cmd: >
+      {{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest
+      npm install -g neovim intelephense typescript typescript-language-server
+      prettier emmet-ls vscode-langservers-extracted blade-formatter
+  # NPM handles its own idempotency. We suppress 'changed' to keep Ansible logs clean.
+  changed_when: false
+  tags: [config, nvim, lsp, npm]
+
+# ---------------------------------------------------------
+# 2. Validation: Ensure specific LSP binaries are available
+# ---------------------------------------------------------
+- name: Verify critical LSP binaries exist in the fnm path
+  ansible.builtin.shell:
+    cmd: "{{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest which intelephense"
+  register: lsp_verification
+  failed_when: lsp_verification.rc != 0
+  changed_when: false
+  tags: [config, nvim, lsp, validation]

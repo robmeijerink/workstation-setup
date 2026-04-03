@@ -1,0 +1,70 @@
+---
+# ---------------------------------------------------------
+# 1. Install Docker & Colima (macOS)
+# ---------------------------------------------------------
+- name: Install Docker CLI and Colima via Homebrew
+  community.general.homebrew:
+    name:
+      - docker
+      - docker-compose
+      - colima
+    state: present
+  when: ansible_os_family == 'Darwin'
+  tags: [install, docker, macos]
+
+# ---------------------------------------------------------
+# 2. Install Native Docker Engine (Ubuntu)
+# ---------------------------------------------------------
+- block:
+    - name: Ensure required dependencies for Docker apt repository
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+
+    - name: Add Docker official GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+        keyring: /usr/share/keyrings/docker-archive-keyring.gpg
+
+    - name: Add Docker official APT repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg]
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_distribution_release }} stable
+        state: present
+        filename: docker
+
+    - name: Install Docker Engine and Compose V2
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+  become: true
+  when: ansible_os_family == 'Debian'
+  tags: [install, docker, ubuntu]
+
+# ---------------------------------------------------------
+# 3. Post-Install: User Permissions (Ubuntu)
+# ---------------------------------------------------------
+- name: Ensure user is added to the docker group
+  ansible.builtin.user:
+    name: "{{ lookup('env', 'USER') }}"
+    groups: docker
+    append: yes
+  become: true
+  when: ansible_os_family == 'Debian'
+  tags: [config, docker, security]
+
+- name: Apply docker group membership without logout for current session
+  ansible.builtin.meta: reset_connection
+  tags: [install, docker]

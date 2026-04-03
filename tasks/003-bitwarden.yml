@@ -1,0 +1,79 @@
+---
+# ---------------------------------------------------------
+# 1. macOS Installation (Desktop & CLI)
+# ---------------------------------------------------------
+- name: Install Bitwarden Desktop and CLI via Homebrew Cask
+  community.general.homebrew_cask:
+    name:
+      - bitwarden
+      - bitwarden-cli
+    state: present
+  when: ansible_os_family == 'Darwin'
+  tags: [bitwarden, install, macos]
+
+# ---------------------------------------------------------
+# 2. Ubuntu Installation (Desktop DEB & CLI via FNM)
+# ---------------------------------------------------------
+- name: Install Bitwarden Desktop via DEB (Ubuntu)
+  block:
+    - name: Download Bitwarden Desktop DEB package
+      ansible.builtin.get_url:
+        url: "https://vault.bitwarden.com/download/?app=desktop&platform=linux&variant=deb"
+        dest: "/tmp/bitwarden.deb"
+        mode: '0644'
+
+    - name: Install Bitwarden Desktop
+      ansible.builtin.apt:
+        deb: "/tmp/bitwarden.deb"
+        state: present
+  become: true
+  when: ansible_os_family == 'Debian'
+  tags: [bitwarden, install, ubuntu]
+
+- name: Install Bitwarden CLI via FNM (Ubuntu)
+  ansible.builtin.shell:
+    # No sudo (become) needed here because fnm is in user-space
+    cmd: "{{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest npm install -g @bitwarden/cli"
+  changed_when: false
+  when: ansible_os_family == 'Debian'
+  tags: [bitwarden, install, ubuntu]
+
+# ---------------------------------------------------------
+# 3. Security: Session Validation & Unlock Prompt
+# ---------------------------------------------------------
+- name: Determine Bitwarden CLI command context
+  ansible.builtin.set_fact:
+    bw_cmd: >-
+      {% if ansible_os_family == 'Debian' %}
+      {{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest bw
+      {% else %}
+      bw
+      {% endif %}
+  tags: [always, security]
+
+- name: Verify Bitwarden authentication status
+  ansible.builtin.shell:
+    cmd: "{{ bw_cmd }} status | jq -r .status"
+  register: bw_status
+  changed_when: false
+  # Fail-safe: if jq or bw isn't ready yet, skip the check to prevent crashing
+  failed_when: false
+  tags: [always, security]
+
+- name: Bitwarden Session Check
+  ansible.builtin.pause:
+    prompt: |
+      [SOLVALUTIONS SECURITY CHECK]
+      Bitwarden is installed but not unlocked.
+
+      To deploy your SSH/GPG keys in the next steps:
+      1. Open a new terminal.
+      2. Run: export BW_SESSION=$(bw login --raw)  (or 'bw unlock --raw')
+      3. Paste that token in this terminal as an environment variable or simply
+         ensure 'bw status' returns 'unlocked' before continuing.
+
+      Press ENTER to continue once your vault is accessible.
+  when:
+    - bw_status.stdout is defined
+    - bw_status.stdout != "unlocked"
+  tags: [always, security]

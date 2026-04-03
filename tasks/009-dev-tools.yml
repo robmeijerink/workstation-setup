@@ -1,0 +1,117 @@
+---
+# ---------------------------------------------------------
+# 1. Install Dev Tools (macOS)
+# ---------------------------------------------------------
+- name: Install Go, PHP, and Composer via Homebrew
+  community.general.homebrew:
+    name:
+      - go
+      - php
+      - composer
+    state: present
+    update_homebrew: yes
+  when: ansible_os_family == 'Darwin'
+  tags: [install, dev, php, go, macos]
+
+# ---------------------------------------------------------
+# 2. Install Dev Tools (Ubuntu)
+# ---------------------------------------------------------
+- block:
+    # -- 2.1 PHP & Composer (Dynamic Latest, No Xdebug on host) --
+    - name: Add Ondrej PHP PPA for latest versions
+      ansible.builtin.apt_repository:
+        repo: 'ppa:ondrej/php'
+        state: present
+        update_cache: yes
+
+    - name: Install latest PHP CLI meta-packages and extensions
+      ansible.builtin.apt:
+        name:
+          - php-cli
+          - php-xml
+          - php-mbstring
+          - php-curl
+          - unzip
+        state: latest
+
+    - name: Download and install Composer globally
+      ansible.builtin.get_url:
+        url: "https://getcomposer.org/download/latest-stable/composer.phar"
+        dest: "/usr/local/bin/composer"
+        mode: '0755'
+
+    # -- 2.2 Go Compiler (Dynamic Latest Version) --
+    - name: Fetch latest Go version metadata dynamically
+      ansible.builtin.uri:
+        url: "https://go.dev/dl/?mode=json"
+        return_content: yes
+      register: go_latest
+      changed_when: false
+
+    - name: Download and extract latest Go tarball
+      ansible.builtin.unarchive:
+        src: "https://go.dev/dl/{{ (go_latest.json | first).version }}.linux-amd64.tar.gz"
+        dest: "/usr/local"
+        remote_src: yes
+        creates: "/usr/local/go/bin/go"
+
+    - name: Symlink Go binary to standard execution path
+      ansible.builtin.file:
+        src: "/usr/local/go/bin/go"
+        dest: "/usr/local/bin/go"
+        state: link
+  become: true
+  when: ansible_os_family == 'Debian'
+  tags: [install, dev, ubuntu]
+
+# ---------------------------------------------------------
+# 3. Install Rust via rustup (Cross-platform)
+# ---------------------------------------------------------
+- name: Check if rustup is installed
+  ansible.builtin.stat:
+    path: "{{ lookup('env', 'HOME') }}/.cargo/bin/rustup"
+  register: rustup_check
+  tags: [install, dev, rust]
+
+- name: Install Rust toolchain via rustup
+  ansible.builtin.shell:
+    cmd: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+  when: not rustup_check.stat.exists
+  tags: [install, dev, rust]
+
+- name: Update Rust toolchain if already installed
+  ansible.builtin.shell:
+    cmd: "{{ lookup('env', 'HOME') }}/.cargo/bin/rustup update"
+  when: rustup_check.stat.exists
+  changed_when: false
+  tags: [install, dev, rust]
+
+# ---------------------------------------------------------
+# 4. PHP Debug Adapter for Neovim (vscode-php-debug)
+# ---------------------------------------------------------
+- name: Ensure build directory exists
+  ansible.builtin.file:
+    path: "{{ lookup('env', 'HOME') }}/build"
+    state: directory
+    mode: '0755'
+  tags: [php, debugger, install]
+
+- name: Clone vscode-php-debug adapter
+  ansible.builtin.git:
+    repo: "https://github.com/xdebug/vscode-php-debug.git"
+    dest: "{{ lookup('env', 'HOME') }}/build/vscode-php-debug"
+    depth: 1
+    single_branch: yes
+    version: master
+  register: xdebug_clone
+  tags: [php, debugger, install]
+
+- name: Build vscode-php-debug adapter using fnm
+  ansible.builtin.shell:
+    # Using fnm to ensure npm is available and correct version is used
+    cmd: |
+      {{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest npm install
+      {{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest npm run build
+    chdir: "{{ lookup('env', 'HOME') }}/build/vscode-php-debug"
+  when: xdebug_clone.changed
+  tags: [php, debugger, install]

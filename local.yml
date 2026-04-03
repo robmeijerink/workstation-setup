@@ -2,6 +2,7 @@
 - name: RobMeijerink Workstation Setup
   hosts: localhost
   connection: local
+  gather_facts: true
   become: false
 
   tasks:
@@ -9,70 +10,76 @@
     # PHASE 1: INSTALLATION & INFRASTRUCTURE (001-099)
     # =========================================================
 
-    - name: 001 - OS Base Setup
-      ansible.builtin.import_tasks: tasks/001-os-base.yml
-      tags: [install, base]
+    - name: 001 OS Base Setup Ubuntu
+      ansible.builtin.import_tasks: tasks/001-ubuntu.yml
+      when: ansible_os_family == 'Debian'
+      tags: [install, base, ubuntu]
 
-    - name: 002 - Runtime Node.js (via fnm)
+    - name: 001 OS Base Setup macOS
+      ansible.builtin.import_tasks: tasks/001-macos.yml
+      when: ansible_os_family == 'Darwin'
+      tags: [install, base, macos]
+
+    - name: 002 Runtime Node.js via fnm
       ansible.builtin.import_tasks: tasks/002-node.yml
       tags: [install, node]
 
-    - name: 003 - Security Bitwarden
+    - name: 003 Security Bitwarden Desktop CLI and Unlock Check
       ansible.builtin.import_tasks: tasks/003-bitwarden.yml
       tags: [install, security, bitwarden]
 
-    - name: 004 - Security SSH (Bitwarden Agent)
+    - name: 004 Security SSH Bitwarden Agent Integration
       ansible.builtin.import_tasks: tasks/004-ssh.yml
       tags: [install, security, ssh]
 
-    - name: 005 - Security GPG
+    - name: 005 Security GPG
       ansible.builtin.import_tasks: tasks/005-gpg.yml
       tags: [install, security, gpg]
 
-    - name: 006 - Install Alacritty Terminal
+    - name: 006 Install Alacritty Terminal
       ansible.builtin.import_tasks: tasks/006-alacritty.yml
       tags: [install, alacritty, terminal]
 
-    - name: 007 - Install Nerd Font
+    - name: 007 Install Nerd Fonts
       ansible.builtin.import_tasks: tasks/007-fonts.yml
       tags: [install, fonts]
 
-    - name: 008 - Virtualization Docker & Colima
+    - name: 008 Virtualization Docker and Colima
       ansible.builtin.import_tasks: tasks/008-docker.yml
       tags: [install, docker]
 
-    - name: 009 - Install DEV Tools and programming languages
-      ansible.builtin.import_tasks: tasks/010-dev-tools.yml
+    - name: 009 Install DEV Tools Go PHP Rust and Debug Adapter
+      ansible.builtin.import_tasks: tasks/009-dev-tools.yml
       tags: [install, dev, programming]
 
-    - name: 045 - Install Neovim Config Dependencies
+    - name: 045 Install Neovim Runtime Dependencies
       ansible.builtin.import_tasks: tasks/045-neovim-deps.yml
-      tags: [install, neovim]
+      tags: [install, neovim, deps]
 
-    - name: 050 - Install Neovim
+    - name: 050 Install Neovim Binary
       ansible.builtin.import_tasks: tasks/050-neovim.yml
       tags: [install, neovim]
 
-    - name: 055 - Install Neovim LSP & Mason
+    - name: 055 Post-Install Neovim LSP and Mason
       ansible.builtin.import_tasks: tasks/055-neovim-lsp.yml
       tags: [install, neovim, lsp]
 
     # =========================================================
-    # PHASE 2: PERSONAL CONFIGURATION (100+)
+      # PHASE 2: PERSONAL CONFIGURATION (100+)
     # =========================================================
 
-    - name: 100 - Shell Zsh & Zap Plugins
+    - name: 100 Shell Zsh Configuration and Zap Plugins
       ansible.builtin.import_tasks: tasks/100-zsh-setup.yml
       tags: [config, zsh]
 
-    - name: 150 - Dotfiles Clone and Stow
+    - name: 150 Dotfiles Clone and Stow via setup.sh
       ansible.builtin.import_tasks: tasks/150-dotfiles.yml
       tags: [config, dotfiles]
 
     # ---------------------------------------------------------
-    # Final Step: System Reboot Handler
+      # Final Step: System Reboot Handler
     # ---------------------------------------------------------
-    - name: Check if a reboot is required (Ubuntu)
+    - name: Check if a reboot is required Ubuntu
       ansible.builtin.stat:
         path: /var/run/reboot-required
       register: reboot_required_file
@@ -81,13 +88,15 @@
 
     - name: Prompt for reboot if system changes were made
       ansible.builtin.pause:
-        prompt: "System requires a reboot to apply all changes (Docker groups/macOS settings). Reboot now? (y/n)"
+        prompt: "System requires a reboot to apply all changes (Docker groups/macOS settings). Reboot now? (y/N)"
       register: reboot_prompt
       when: (reboot_required_file.stat.exists is defined and reboot_required_file.stat.exists) or (ansible_os_family == 'Darwin')
       tags: [always]
 
-    - name: Rebooting machine...
+    - name: Rebooting machine
       ansible.builtin.reboot:
       become: true
-      when: reboot_prompt.user_input | lower == 'y'
+      when:
+        - reboot_prompt.user_input is defined
+        - reboot_prompt.user_input | lower == 'y'
       tags: [always]

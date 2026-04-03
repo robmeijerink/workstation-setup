@@ -63,7 +63,7 @@
 - name: Bitwarden Session Check
   ansible.builtin.pause:
     prompt: |
-      [SOLVALUTIONS SECURITY CHECK]
+      [SECURITY CHECK]
       Bitwarden is installed but not unlocked.
 
       To deploy your SSH/GPG keys in the next steps:

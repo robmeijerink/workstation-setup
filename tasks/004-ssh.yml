@@ -24,7 +24,7 @@
 - name: Pause for manual Bitwarden SSH configuration
   ansible.builtin.pause:
     prompt: |
-      [SOLVALUTIONS SECURITY ACTION] SSH Agent socket not found at: {{ bw_ssh_socket }}
+      [SECURITY ACTION] SSH Agent socket not found at: {{ bw_ssh_socket }}
 
       1. Open Bitwarden Desktop.
       2. Settings > Privacy & Security > Enable SSH Agent.
@@ -63,7 +63,7 @@
     dest: "{{ lookup('env', 'HOME') }}/.ssh/config"
     mode: '0600'
     content: |
-      # Managed by Ansible - Solvalutions Workstation Setup
+      # Managed by Ansible - RobMeijerink Workstation Setup
 
       Host *
           # ZERO-DISK POLICY: Keys are served directly from Bitwarden memory

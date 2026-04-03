@@ -14,6 +14,8 @@
       - xdotool
       - zsh
       - htop
+      - wl-clipboard
+      - xclip
     state: present
     update_cache: yes
   become: true
@@ -45,12 +47,15 @@
       - stow
       - tmux
       - fzf
+      - ripgrep
+      - fd
       - jq
       - yq
       - zoxide
       - bat
       - eza
       - lazygit
+      - lazydocker
       - git-delta
       - gum
       - sad

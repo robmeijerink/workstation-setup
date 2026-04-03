@@ -1,0 +1,55 @@
+---
+# ---------------------------------------------------------
+# 1. Neovim System Dependencies (Ubuntu)
+# ---------------------------------------------------------
+- name: Install Neovim runtime dependencies (Ubuntu)
+  ansible.builtin.apt:
+    name:
+      - ripgrep       # Engine for Telescope (Live Grep)
+      - fd-find       # Faster find for Telescope
+      - xclip         # Clipboard integration (X11)
+      - wl-clipboard  # Clipboard integration (Wayland / Ubuntu 24.04 default)
+      - python3-venv  # Required for Mason to isolate LSP installs
+      - lua5.4        # Native Lua support
+      - luarocks      # For building Neovim plugins
+    state: present
+  become: true
+  when: ansible_os_family == 'Debian'
+  tags: [install, neovim, deps]
+
+# ---------------------------------------------------------
+# 2. Neovim System Dependencies (macOS)
+# ---------------------------------------------------------
+- name: Install Neovim runtime dependencies (macOS)
+  community.general.homebrew:
+    name:
+      - ripgrep
+      - fd
+      - luarocks
+    state: present
+  when: ansible_os_family == 'Darwin'
+  tags: [install, neovim, deps]
+
+# ---------------------------------------------------------
+# 3. Install Neovim Node Client (via fnm context)
+# ---------------------------------------------------------
+- name: Install Neovim Node.js client globally
+  ansible.builtin.shell:
+    # Only install the Node client. Mason handles actual LSPs/formatters.
+    cmd: "{{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest npm install -g neovim"
+  # O(1) execution: NPM checks hash and skips if state is correct.
+  changed_when: false
+  tags: [install, nvim, deps, npm]
+
+# ---------------------------------------------------------
+# 4. Post-Install: Symlink fd on Ubuntu
+# ---------------------------------------------------------
+# Ubuntu installs 'fd' as 'fdfind'. Neovim plugins expect 'fd'.
+- name: Ensure 'fd' symlink exists for Telescope (Ubuntu)
+  ansible.builtin.file:
+    src: /usr/bin/fdfind
+    dest: /usr/local/bin/fd
+    state: link
+  become: true
+  when: ansible_os_family == 'Debian'
+  tags: [install, nvim, deps, ubuntu]

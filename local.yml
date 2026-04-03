@@ -45,8 +45,8 @@
       ansible.builtin.import_tasks: tasks/010-dev-tools.yml
       tags: [install, dev, programming]
 
-    - name: 010 - Install Neovim Config Dependencies
-      ansible.builtin.import_tasks: tasks/010-neovim-deps.yml
+    - name: 045 - Install Neovim Config Dependencies
+      ansible.builtin.import_tasks: tasks/045-neovim-deps.yml
       tags: [install, neovim]
 
     - name: 050 - Install Neovim

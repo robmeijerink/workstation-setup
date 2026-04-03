@@ -1,0 +1,53 @@
+---
+# ---------------------------------------------------------
+# 1. Install Fast Node Manager (fnm) - Cross-Platform
+# ---------------------------------------------------------
+# We intentionally use the installation script for both Ubuntu and macOS
+# to guarantee the exact same binary path (~/.local/share/fnm/fnm)
+# which is heavily relied upon by Neovim and DAP configurations.
+
+- name: Check if fnm is already installed
+  ansible.builtin.stat:
+    path: "{{ lookup('env', 'HOME') }}/.local/share/fnm/fnm"
+  register: fnm_binary
+  tags: [install, node, fnm]
+
+- name: Download and install fnm silently
+  ansible.builtin.shell:
+    # We skip shell modification because your dotfiles (.zshrc) will handle 'fnm env'
+    cmd: "curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir {{ lookup('env', 'HOME') }}/.local/share/fnm --skip-shell"
+  when: not fnm_binary.stat.exists
+  tags: [install, node, fnm]
+
+# ---------------------------------------------------------
+# 2. Bootstrap Node.js LTS
+# ---------------------------------------------------------
+- name: Install latest Node.js LTS version via fnm
+  ansible.builtin.shell:
+    cmd: "{{ lookup('env', 'HOME') }}/.local/share/fnm/fnm install --lts"
+  register: fnm_install
+  # O(1) idempotency: Only report 'changed' if a new download actually occurred
+  changed_when: "'Installing' in fnm_install.stdout or 'installed' in fnm_install.stdout | lower"
+  tags: [install, node, fnm]
+
+- name: Set default Node.js version to lts-latest
+  ansible.builtin.shell:
+    cmd: "{{ lookup('env', 'HOME') }}/.local/share/fnm/fnm default lts-latest"
+  # This command is extremely fast and harmless to run repeatedly
+  changed_when: false
+  tags: [install, node, fnm]
+
+# ---------------------------------------------------------
+# 3. Global NPM Packages (Optional but recommended for Solvalutions)
+# ---------------------------------------------------------
+# Only add generic, project-agnostic tools here. Neovim's npm dependency
+# is explicitly handled in 010-neovim-deps.yml to keep domains isolated.
+- name: Install essential global NPM packages
+  ansible.builtin.shell:
+    cmd: "{{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest npm install -g {{ item }}"
+  loop:
+    - npm-check-updates  # Handy B2B tool for quickly upgrading project dependencies
+    - yarn               # Legacy support for older Vue/Laravel projects
+  # NPM handles its own idempotency by checking hashes before downloading
+  changed_when: false
+  tags: [install, node, npm, packages]

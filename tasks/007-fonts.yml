@@ -9,9 +9,11 @@
   register: nerd_fonts_latest
   tags: [fonts]
 
-- name: Extract FiraCode download URL
+- name: Set Font paths and URLs
   ansible.builtin.set_fact:
     firacode_url: "{{ nerd_fonts_latest.json.assets | selectattr('name', 'equalto', 'FiraCode.zip') | map(attribute='browser_download_url') | first }}"
+    font_dir: "{{ (ansible_os_family == 'Darwin') | ternary(lookup('env', 'HOME') + '/Library/Fonts', lookup('env', 'HOME') + '/.local/share/fonts') }}"
+    check_file: "{{ (ansible_os_family == 'Darwin') | ternary('FiraCodeNerdFont-Retina.ttf', 'FiraCodeNerdFont-Regular.ttf') }}"
   tags: [fonts]
 
 # ---------------------------------------------------------
@@ -19,29 +21,35 @@
 # ---------------------------------------------------------
 - name: Ensure Font directory exists
   ansible.builtin.file:
-    path: "{{ (ansible_os_family == 'Darwin') | ternary(lookup('env', 'HOME') + '/Library/Fonts', lookup('env', 'HOME') + '/.local/share/fonts') }}"
+    path: "{{ font_dir }}"
     state: directory
     mode: '0755'
   tags: [fonts]
 
 # ---------------------------------------------------------
-# 3. Download and Install Fira Code Nerd Font (Idempotent)
+# 3. Download and Install Fira Code Nerd Font
 # ---------------------------------------------------------
 - name: Download and install latest Fira Code Nerd Font
   ansible.builtin.unarchive:
     src: "{{ firacode_url }}"
-    dest: "{{ (ansible_os_family == 'Darwin') | ternary(lookup('env', 'HOME') + '/Library/Fonts', lookup('env', 'HOME') + '/.local/share/fonts') }}"
+    dest: "{{ font_dir }}"
     remote_src: yes
-    exclude: ["*.otf", "*.md", "*.txt"]
-    # Prevents re-downloading if the font already exists (O(1) on re-run)
-    creates: "{{ (ansible_os_family == 'Darwin') | ternary(lookup('env', 'HOME') + '/Library/Fonts/FiraCodeNerdFont-Regular.ttf', lookup('env', 'HOME') + '/.local/share/fonts/FiraCodeNerdFont-Regular.ttf') }}"
+    exclude: ["*.otf", "*.md", "*.txt", "LICENSE"]
+    creates: "{{ font_dir }}/{{ check_file }}"
   tags: [fonts]
 
 # ---------------------------------------------------------
-# 4. Update Font Cache (Ubuntu only)
+# 4. OS-Specific Font Finalization
 # ---------------------------------------------------------
 - name: Update font cache (Ubuntu)
   ansible.builtin.command: fc-cache -fv
   when: ansible_os_family == 'Debian'
   changed_when: false
   tags: [fonts, ubuntu]
+
+- name: Verify Font Installation (macOS)
+  ansible.builtin.command: "ls {{ font_dir }}/FiraCodeNerdFont-Retina.ttf"
+  register: font_check_mac
+  failed_when: false
+  when: ansible_os_family == 'Darwin'
+  tags: [fonts, macos]

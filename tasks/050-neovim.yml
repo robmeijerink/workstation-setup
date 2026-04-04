@@ -13,31 +13,60 @@
 # 2. Install Neovim (Ubuntu) - GitHub Stable AppImage
 # ---------------------------------------------------------
 - block:
-    - name: Ensure FUSE dependency is installed for AppImage execution
+    - name: Ensure FUSE dependency is installed
       ansible.builtin.apt:
-        # Ubuntu 24.04 requires libfuse2t64 (or libfuse2 alias) to run AppImages natively
         name: libfuse2t64
         state: present
 
-    - name: Download latest stable Neovim AppImage
+    - name: Download Neovim AppImage
       ansible.builtin.get_url:
         url: "https://github.com/neovim/neovim/releases/download/stable/nvim.appimage"
         dest: "/usr/local/bin/nvim"
         mode: '0755'
-        # get_url natively uses ETag/Last-Modified headers to achieve O(1) idempotency.
-        # It will only download the ~30MB binary if the stable tag on GitHub updates.
+        # Force download only if remote file is newer
+        owner: root
+        group: root
   become: true
   when: ansible_os_family == 'Debian'
   tags: [install, neovim, ubuntu]
 
 # ---------------------------------------------------------
-# 3. Install Global LSP Toolchain (via fnm)
+# 3. Minimal Global Dependencies
 # ---------------------------------------------------------
-- name: Install Neovim LSP dependencies securely via fnm context
+- name: Install mandatory Node provider for Neovim
   ansible.builtin.shell:
     cmd: >
-      {{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest
-      npm install -g neovim intelephense typescript typescript-language-server
-      prettier emmet-ls vscode-langservers-extracted blade-formatter
+      {{ ansible_user_dir }}/.local/share/fnm/fnm exec --using=lts-latest
+      npm install -g neovim
+  # We only need the provider; let Mason handle the LSPs/Formatters
   changed_when: false
-  tags: [install, neovim, lsp, npm]
+  tags: [install, neovim, provider]
+
+# ---------------------------------------------------------
+# 4. Mason System Dependencies (The "Toolbox")
+# ---------------------------------------------------------
+- name: Ensure Mason can extract and install binaries
+  ansible.builtin.apt:
+    name:
+      - unzip
+      - wget
+      - curl
+      - gzip
+      - tar
+      - build-essential # Required for compiling some tree-sitter parsers or Go tools
+    state: present
+  become: true
+  when: ansible_os_family == 'Debian'
+  tags: [install, neovim, mason]
+
+# ---------------------------------------------------------
+# 5. Headless Mason Sync
+# ---------------------------------------------------------
+- name: Trigger Mason to install LSPs headless
+  ansible.builtin.shell:
+    # We run nvim, let Mason do its thing based on your 'ensure_installed' list, and quit.
+    # This brings your environment to the desired state in O(n) time.
+    cmd: "nvim --headless -c 'MasonUpdate' -c 'qa'"
+  # We use 'changed_when: false' because Mason manages its own idempotency.
+  changed_when: false
+  tags: [install, neovim, mason]

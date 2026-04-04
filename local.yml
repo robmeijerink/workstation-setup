@@ -69,7 +69,7 @@
     # =========================================================
 
     - name: 100 Shell Zsh Configuration and Zap Plugins
-      ansible.builtin.import_tasks: tasks/100-zsh-setup.yml
+      ansible.builtin.import_tasks: tasks/100-zsh.yml
       tags: [config, zsh]
 
     - name: 150 Dotfiles Clone and Stow via setup.sh

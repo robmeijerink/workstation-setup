@@ -1,17 +1,24 @@
 ---
 # ---------------------------------------------------------
-# 1. Preparation: Remove Default OS Blockers
+# 1. Preparation: Check & Remove OS Blockers
 # ---------------------------------------------------------
-- name: Remove default OS files to prevent script conflicts
-  ansible.builtin.file:
-    path: "{{ lookup('env', 'HOME') }}/{{ item }}"
-    state: absent
-  # Only remove if it's a regular file, not already a symlink
-  when: not (lookup('ansible.builtin.pipe', 'test -L ' + lookup('env', 'HOME') + '/' + item + ' && echo "link" || echo "file"') == "link")
+- name: Check status of default OS files
+  ansible.builtin.stat:
+    path: "{{ ansible_user_dir }}/{{ item }}"
   loop:
     - .zshrc
     - .bashrc
     - .profile
+  register: os_files
+  tags: [config, dotfiles, cleanup]
+
+- name: Remove default OS files if they are NOT symlinks
+  ansible.builtin.file:
+    path: "{{ item.stat.path }}"
+    state: absent
+  # Only delete if the file exists and is a regular file (not a link)
+  when: item.stat.exists and not item.stat.islnk
+  loop: "{{ os_files.results }}"
   tags: [config, dotfiles, cleanup]
 
 # ---------------------------------------------------------
@@ -20,21 +27,20 @@
 - name: Clone dotfiles repository from GitHub
   ansible.builtin.git:
     repo: "git@github.com:robmeijerink/dotfiles.git"
-    dest: "{{ lookup('env', 'HOME') }}/.dotfiles"
+    dest: "{{ ansible_user_dir }}/.dotfiles"
     version: main
     accept_hostkey: yes
   register: dotfiles_repo
   tags: [config, dotfiles]
 
 # ---------------------------------------------------------
-# 3. Execute Legacy Setup Script
+# 3. Execute Setup Script
 # ---------------------------------------------------------
 - name: Run dotfiles setup script
   ansible.builtin.shell:
     cmd: "./setup.sh"
-    chdir: "{{ lookup('env', 'HOME') }}/.dotfiles"
+    chdir: "{{ ansible_user_dir }}/.dotfiles"
     executable: /bin/bash
-  # Optimization: only run if the repo was just cloned or updated
-  # or use 'changed_when: true' to always ensure symlinks are correct
+  # Always run to ensure symlink integrity, or keep repo-bound for speed
   changed_when: dotfiles_repo.changed
   tags: [config, dotfiles, script]

@@ -38,8 +38,6 @@
 # ---------------------------------------------------------
 # 2. System Level Tweak: macOS Key Repeat
 # ---------------------------------------------------------
-# macOS blokkeert standaard het herhalen van toetsen (zoals j/k)
-# om een accentmenu te tonen. Dit is dodelijk voor Neovim navigatie.
 - name: Disable macOS ApplePressAndHoldEnabled for Neovim navigation
   community.general.osx_defaults:
     domain: NSGlobalDomain

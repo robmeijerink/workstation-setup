@@ -27,7 +27,7 @@
       - php-code-sniffer
       - zsh
       - htop
-      - tree-sitter
+      - tree-sitter     # lspsaga dep
       - stylua
       - prettierd
     state: present

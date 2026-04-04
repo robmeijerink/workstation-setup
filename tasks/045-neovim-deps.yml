@@ -39,7 +39,7 @@
     cmd: "{{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest npm install -g neovim"
   # O(1) execution: NPM checks hash and skips if state is correct.
   changed_when: false
-  tags: [install, nvim, deps, npm]
+  tags: [install, neovim, deps, npm]
 
 # ---------------------------------------------------------
 # 4. Post-Install: Symlink fd on Ubuntu
@@ -52,4 +52,4 @@
     state: link
   become: true
   when: ansible_os_family == 'Debian'
-  tags: [install, nvim, deps, ubuntu]
+  tags: [install, neovim, deps, ubuntu]

@@ -13,6 +13,7 @@
       - fzf
       - ripgrep         # Telescope.nvim dep
       - fd              # Telescope.nvim dep
+      - sd
       - jq
       - yq
       - zoxide

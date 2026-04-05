@@ -46,6 +46,7 @@
       - tmux
       - fzf
       - ripgrep
+      - sd
       - fd
       - jq
       - yq

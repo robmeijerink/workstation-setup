@@ -76,6 +76,10 @@
       ansible.builtin.import_tasks: tasks/150-dotfiles.yml
       tags: [config, dotfiles]
 
+    - name: 200 Configures tmux and plugin manager
+      ansible.builtin.import_tasks: tasks/200-tmux.yml
+      tags: [config, tmuxgs]
+
     # ---------------------------------------------------------
       # Final Step: System Reboot Handler
     # ---------------------------------------------------------

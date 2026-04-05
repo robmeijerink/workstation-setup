@@ -1,0 +1,29 @@
+---
+# =========================================================
+# TPM Bootstrap & Plugin Provisioning
+# =========================================================
+
+- name: Bootstrap Tmux Plugin Manager (TPM)
+  ansible.builtin.git:
+    repo: https://github.com/tmux-plugins/tpm
+    dest: "{{ ansible_env.HOME }}/.tmux/plugins/tpm"
+    update: no # O(1) performance: only clones if missing
+  tags: [tmux, tpm]
+
+- name: Force state-sync (Reload Tmux config in running server)
+  ansible.builtin.shell:
+    cmd: "tmux source-file {{ ansible_env.HOME }}/.tmux.conf"
+  environment:
+    PATH: "/opt/homebrew/bin:/usr/local/bin:/home/linuxbrew/.linuxbrew/bin:{{ ansible_env.PATH }}"
+  failed_when: false
+  changed_when: false
+  tags: [tmux, tpm]
+
+- name: Headless installation of Tmux plugins
+  ansible.builtin.shell:
+    cmd: "{{ ansible_env.HOME }}/.tmux/plugins/tpm/scripts/install_plugins.sh"
+  environment:
+    TMUX_PLUGIN_MANAGER_PATH: "{{ ansible_env.HOME }}/.tmux/plugins"
+    PATH: "/opt/homebrew/bin:/usr/local/bin:/home/linuxbrew/.linuxbrew/bin:{{ ansible_env.PATH }}"
+  changed_when: false
+  tags: [tmux, tpm]

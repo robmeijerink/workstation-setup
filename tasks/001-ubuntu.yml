@@ -15,7 +15,6 @@
       - zsh
       - htop
       - wl-clipboard
-      - xclip
     state: present
     update_cache: yes
   become: true

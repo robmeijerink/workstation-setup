@@ -1,0 +1,71 @@
+---
+# =========================================================
+# System Backup Infrastructure - Timeshift (RSYNC)
+# =========================================================
+
+- name: Configure Timeshift for stateless rollback
+  hosts: localhost
+  become: true
+  tasks:
+    - name: Install Timeshift package
+      ansible.builtin.apt:
+        name: timeshift
+        state: present
+      tags: [system, backup]
+
+    - name: Ensure configuration directory exists
+      ansible.builtin.file:
+        path: /etc/timeshift
+        state: directory
+        mode: '0755'
+      tags: [config, backup]
+
+    - name: Determine Root Partition UUID for Timeshift target
+      ansible.builtin.set_fact:
+        root_uuid: "{{ item.uuid }}"
+      loop: "{{ ansible_mounts }}"
+      when: item.mount == "/"
+      tags: [config, backup]
+
+    - name: Deploy dynamic Timeshift JSON configuration
+      ansible.builtin.copy:
+        dest: /etc/timeshift/timeshift.json
+        mode: '0644'
+        content: |
+          {
+            "backup_device_uuid": "{{ root_uuid }}",
+            "parent_device_uuid": "",
+            "do_first_run": "false",
+            "btrfs_mode": "false",
+            "include_btrfs_home_for_backup": "false",
+            "include_btrfs_home_for_restore": "false",
+            "schedule_monthly": "false",
+            "schedule_weekly": "false",
+            "schedule_daily": "false",
+            "schedule_hourly": "false",
+            "schedule_boot": "true",
+            "count_monthly": "0",
+            "count_weekly": "0",
+            "count_daily": "0",
+            "count_hourly": "0",
+            "count_boot": "3",
+            "snapshot_device": "/dev/disk/by-uuid/{{ root_uuid }}",
+            "snapshot_number": "3",
+            "stop_on_low_space": "true",
+            "exclude": [
+              "/home/rob/**",
+              "/root/**",
+              "/tmp/**",
+              "/var/tmp/**",
+              "/var/cache/**",
+              "/var/lib/docker/**"
+            ],
+            "include": []
+          }
+      tags: [config, backup]
+
+    - name: Create initial Boot snapshot to establish baseline
+      ansible.builtin.command: timeshift --create --comments "Initial RobMeijerink Baseline"
+      args:
+        creates: /timeshift/snapshots/
+      tags: [system, backup]

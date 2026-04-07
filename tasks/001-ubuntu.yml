@@ -1,4 +1,8 @@
 ---
+# =========================================================
+#  Ubuntu Server (Sway / Wayland) Playbook
+# =========================================================
+
 # ---------------------------------------------------------
 # 1. Install Base System Requirements via APT
 # ---------------------------------------------------------
@@ -14,6 +18,12 @@
       - zsh
       - htop
       - wl-clipboard
+      - gnupg2
+      - gnupg-agent
+      - pinentry-curses
+      - dbus-user-session
+      - gnome-keyring
+      - libsecret-1-0
     state: present
     update_cache: yes
   become: true
@@ -37,11 +47,16 @@
   tags: [install, base, brew]
 
 # ---------------------------------------------------------
-# 3. Install Developer CLI Tools via Homebrew
+# 3. Install Developer CLI Tools & Runtimes via Homebrew
 # ---------------------------------------------------------
-- name: Install modern CLI tools via Homebrew (100% parity with macOS)
+- name: Install modern CLI tools and core runtimes (100% parity with macOS)
   community.general.homebrew:
     name:
+      # Core Runtimes (Required for Neovim LSPs and DevOps)
+      - node
+      - go
+      - python
+      # Development CLI Tools
       - stow
       - tmux
       - fzf
@@ -67,3 +82,43 @@
     update_homebrew: yes
     path: /home/linuxbrew/.linuxbrew/bin
   tags: [install, base, brew, tools]
+
+# ---------------------------------------------------------
+# 4. Wayland, Sway & Core Desktop Infrastructure
+# ---------------------------------------------------------
+- name: Install Sway compositor and essential UI components
+  ansible.builtin.apt:
+    name:
+      - sway
+      - swaybg
+      - swayidle
+      - swaylock
+      - waybar
+      - wofi
+      - mako-notifier
+      - xwayland
+      - xdg-desktop-portal-wlr
+    state: present
+  become: true
+  tags: [install, desktop, sway]
+
+- name: Install hardware daemons (Audio, Network, Bluetooth)
+  ansible.builtin.apt:
+    name:
+      - pipewire
+      - pipewire-pulse
+      - wireplumber
+      - network-manager
+      - bluez
+      - blueman
+      - pavucontrol
+    state: present
+  become: true
+  tags: [install, hardware, daemons]
+
+- name: Install terminal emulator via native package manager
+  ansible.builtin.apt:
+    name: alacritty
+    state: present
+  become: true
+  tags: [install, desktop, terminal]

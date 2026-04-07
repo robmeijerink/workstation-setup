@@ -1,67 +1,53 @@
 ---
-- name: Ensure ~/.gnupg exists with strict permissions (0700)
-  ansible.builtin.file:
-    path: "{{ lookup('env', 'HOME') }}/.gnupg"
-    state: directory
-    mode: '0700'
+# =========================================================
+# GPG & Agent Configuration - Multi-OS (macOS & Ubuntu)
+# =========================================================
 
-- name: Configure gpg.conf with best practices
-  ansible.builtin.copy:
-    dest: "{{ lookup('env', 'HOME') }}/.gnupg/gpg.conf"
-    mode: '0600'
-    content: |
-      # Hide version info and greetings
-      no-greeting
-      no-emit-version
+- name: Configure GPG Infrastructure
+  hosts: localhost
+  tasks:
+    - name: Ensure ~/.gnupg exists with strict permissions
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/.gnupg"
+        state: directory
+        mode: '0700'
 
-      # Default character set
-      charset utf-8
+    - name: Configure gpg.conf
+      ansible.builtin.copy:
+        dest: "{{ ansible_env.HOME }}/.gnupg/gpg.conf"
+        mode: '0600'
+        content: |
+          # Professional GPG Standards
+          no-greeting
+          no-emit-version
+          charset utf-8
+          use-agent
+          keyserver hkps://keys.openpgp.org
 
-      # Always use the agent for password caching
-      use-agent
+    - name: Determine Pinentry path based on OS and Architecture
+      ansible.builtin.set_fact:
+        gpg_pinentry_executable: >-
+          {% if ansible_os_family == 'Darwin' %}
+            {% if ansible_machine == 'x86_64' %}/usr/local/bin/pinentry-mac
+            {% else %}/opt/homebrew/bin/pinentry-mac{% endif %}
+          {% else %}/usr/bin/pinentry-curses{% endif %}
 
-      # Reliable keyserver
-      keyserver hkps://keys.openpgp.org
+    - name: Configure gpg-agent.conf for {{ ansible_os_family }}
+      ansible.builtin.copy:
+        dest: "{{ ansible_env.HOME }}/.gnupg/gpg-agent.conf"
+        mode: '0600'
+        content: |
+          # Cache settings (8 hours)
+          default-cache-ttl 28800
+          max-cache-ttl 28800
 
-- name: Configure gpg-agent.conf for macOS (Apple Silicon / ARM64)
-  ansible.builtin.copy:
-    dest: "{{ lookup('env', 'HOME') }}/.gnupg/gpg-agent.conf"
-    mode: '0600'
-    content: |
-      # Cache the password for 8 hours (28800 seconds)
-      default-cache-ttl 28800
-      max-cache-ttl 28800
+          # OS-Specific Pinentry
+          pinentry-program {{ gpg_pinentry_executable }}
 
-      # Use the native macOS dialog via the Apple Silicon Homebrew location
-      pinentry-program /opt/homebrew/bin/pinentry-mac
-  when: ansible_os_family == 'Darwin' and ansible_machine == 'arm64'
+          # Headless & Wayland optimization
+          allow-loopback-pinentry
+          enable-ssh-support
 
-- name: Configure gpg-agent.conf for macOS (Intel / x86_64)
-  ansible.builtin.copy:
-    dest: "{{ lookup('env', 'HOME') }}/.gnupg/gpg-agent.conf"
-    mode: '0600'
-    content: |
-      # Cache the password for 8 hours (28800 seconds)
-      default-cache-ttl 28800
-      max-cache-ttl 28800
-
-      # Use the native macOS dialog via the Intel Homebrew location
-      pinentry-program /usr/local/bin/pinentry-mac
-  when: ansible_os_family == 'Darwin' and ansible_machine == 'x86_64'
-
-- name: Configure gpg-agent.conf for Ubuntu
-  ansible.builtin.copy:
-    dest: "{{ lookup('env', 'HOME') }}/.gnupg/gpg-agent.conf"
-    mode: '0600'
-    content: |
-      # Cache the password for 8 hours (28800 seconds)
-      default-cache-ttl 28800
-      max-cache-ttl 28800
-
-      # Use the default tty pinentry of Ubuntu
-      pinentry-program /usr/bin/pinentry-tty
-  when: ansible_os_family == 'Debian'
-
-- name: Restart gpg-agent to load new configuration
-  ansible.builtin.command: gpgconf --kill gpg-agent
-  changed_when: false
+    - name: Restart gpg-agent to apply new rules
+      ansible.builtin.command: gpgconf --kill gpg-agent
+      changed_when: false

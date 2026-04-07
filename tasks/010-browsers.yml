@@ -1,0 +1,50 @@
+---
+# =========================================================
+# Multi-OS Browser Deployment
+# =========================================================
+
+- name: Deploy Firefox and Brave Browser
+  hosts: localhost
+  tasks:
+
+    # ---------------------------------------------------------
+    # Ubuntu (Wayland) Logic
+    # ---------------------------------------------------------
+    - name: Install Browsers on Ubuntu
+      block:
+        - name: Ensure Firefox is installed (Native APT)
+          ansible.builtin.apt:
+            name: firefox
+            state: present
+          become: true
+
+        - name: Add Brave Browser GPG Key
+          ansible.builtin.apt_key:
+            url: https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+            state: present
+          become: true
+
+        - name: Add Brave Browser Repository
+          ansible.builtin.apt_repository:
+            repo: "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main"
+            state: present
+          become: true
+
+        - name: Install Brave Browser (Chromium Engine)
+          ansible.builtin.apt:
+            name: brave-browser
+            update_cache: yes
+            state: present
+          become: true
+      when: ansible_os_family == 'Debian'
+
+    # ---------------------------------------------------------
+    # macOS Logic
+    # ---------------------------------------------------------
+    - name: Install Browsers on macOS via Homebrew Cask
+      community.general.homebrew_cask:
+        name:
+          - firefox
+          - brave-browser
+        state: present
+      when: ansible_os_family == 'Darwin'

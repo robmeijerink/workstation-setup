@@ -66,11 +66,8 @@
 - name: Install modern CLI tools and core runtimes (100% parity with macOS)
   community.general.homebrew:
     name:
-      # Core Runtimes (Required for Neovim LSPs and DevOps)
-      - node
-      - go
+      - asdf
       - python
-      # Development CLI Tools
       - stow
       - tmux
       - fzf

@@ -64,6 +64,11 @@
       ansible.builtin.import_tasks: tasks/055-neovim-lsp.yml
       tags: [install, neovim, lsp]
 
+    - name: 080 Installs timeshift and defines backup strategy
+      ansible.builtin.import_tasks: tasks/080-timeshift.yml
+      when: ansible_os_family == 'Debian'
+      tags: [install, timeshift, backup]
+
     # =========================================================
       # PHASE 2: PERSONAL CONFIGURATION (100+)
     # =========================================================

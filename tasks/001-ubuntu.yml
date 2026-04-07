@@ -24,6 +24,19 @@
       - dbus-user-session
       - gnome-keyring
       - libsecret-1-0
+      - unzip
+      - zip
+      - 7zip
+      - xarchiver
+      - vlc
+      - qtwayland5
+      - libavcodec-extra
+      - intel-media-va-driver-non-free
+      - vdpau-driver-all
+      - thunar
+      - thunar-volman
+      - thunar-archive-plugin
+      - tumbler
     state: present
     update_cache: yes
   become: true
@@ -101,6 +114,15 @@
     state: present
   become: true
   tags: [install, desktop, sway]
+
+- name: Install Desktop bridges
+  ansible.builtin.apt:
+    name:
+      -polkit-kde-agent-1
+      -udiskie
+      -udisks2
+    state: present
+  become: true
 
 - name: Install hardware daemons (Audio, Network, Bluetooth)
   ansible.builtin.apt:

@@ -37,6 +37,7 @@
       - thunar-volman
       - thunar-archive-plugin
       - tumbler
+      - imv
     state: present
     update_cache: yes
   become: true
@@ -91,6 +92,8 @@
       - tree-sitter
       - stylua
       - prettierd
+      - jq
+      - lnav
     state: present
     update_homebrew: yes
     path: /home/linuxbrew/.linuxbrew/bin

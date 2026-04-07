@@ -1,0 +1,33 @@
+---
+# =========================================================
+# Optional: Opt-in Office Suite (macOS & Ubuntu)
+# Usage: ansible-playbook office.yml --tags office
+# =========================================================
+
+- name: Deploy SoftMaker FreeOffice for offline B2B documents
+  tasks:
+    # ---------------------------------------------------------
+    # Ubuntu Server (Sway/Wayland) Execution
+    # ---------------------------------------------------------
+    - name: Install FreeOffice via DEB package (Ubuntu)
+      ansible.builtin.apt:
+        deb: "https://www.softmaker.net/down/softmaker-freeoffice-2024_amd64.deb"
+        state: present
+      become: true
+      when: ansible_os_family == 'Debian'
+      tags:
+        - never
+        - office
+
+    # ---------------------------------------------------------
+    # macOS (Apple macOS) Execution
+    # ---------------------------------------------------------
+    - name: Install FreeOffice via Homebrew Cask (macOS)
+      community.general.homebrew_cask:
+        name: freeoffice
+        state: present
+        accept_external_apps: true
+      when: ansible_os_family == 'Darwin'
+      tags:
+        - never
+        - office

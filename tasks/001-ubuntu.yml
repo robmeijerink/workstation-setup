@@ -1,6 +1,6 @@
 ---
 # =========================================================
-#  Ubuntu Server (Sway / Wayland) Playbook
+# Ubuntu Server Base Playbook
 # =========================================================
 
 # ---------------------------------------------------------
@@ -27,17 +27,6 @@
       - unzip
       - zip
       - 7zip
-      - xarchiver
-      - vlc
-      - qtwayland5
-      - libavcodec-extra
-      - intel-media-va-driver-non-free
-      - vdpau-driver-all
-      - thunar
-      - thunar-volman
-      - thunar-archive-plugin
-      - tumbler
-      - imv
     state: present
     update_cache: yes
   become: true
@@ -59,88 +48,3 @@
     NONINTERACTIVE: "1"
   when: not linuxbrew_check.stat.exists
   tags: [install, base, brew]
-
-# ---------------------------------------------------------
-# 3. Install Developer CLI Tools & Runtimes via Homebrew
-# ---------------------------------------------------------
-- name: Install modern CLI tools and core runtimes (100% parity with macOS)
-  community.general.homebrew:
-    name:
-      - asdf
-      - python
-      - stow
-      - tmux
-      - fzf
-      - ripgrep
-      - sd
-      - fd
-      - jq
-      - yq
-      - zoxide
-      - bat
-      - eza
-      - lazygit
-      - lazydocker
-      - git-delta
-      - gum
-      - sad
-      - chafa
-      - php-code-sniffer
-      - tree-sitter
-      - stylua
-      - prettierd
-      - jq
-      - lnav
-    state: present
-    update_homebrew: yes
-    path: /home/linuxbrew/.linuxbrew/bin
-  tags: [install, base, brew, tools]
-
-# ---------------------------------------------------------
-# 4. Wayland, Sway & Core Desktop Infrastructure
-# ---------------------------------------------------------
-- name: Install Sway compositor and essential UI components
-  ansible.builtin.apt:
-    name:
-      - sway
-      - swaybg
-      - swayidle
-      - swaylock
-      - waybar
-      - wofi
-      - mako-notifier
-      - xwayland
-      - xdg-desktop-portal-wlr
-    state: present
-  become: true
-  tags: [install, desktop, sway]
-
-- name: Install Desktop bridges
-  ansible.builtin.apt:
-    name:
-      -polkit-kde-agent-1
-      -udiskie
-      -udisks2
-    state: present
-  become: true
-
-- name: Install hardware daemons (Audio, Network, Bluetooth)
-  ansible.builtin.apt:
-    name:
-      - pipewire
-      - pipewire-pulse
-      - wireplumber
-      - network-manager
-      - bluez
-      - blueman
-      - pavucontrol
-    state: present
-  become: true
-  tags: [install, hardware, daemons]
-
-- name: Install terminal emulator via native package manager
-  ansible.builtin.apt:
-    name: alacritty
-    state: present
-  become: true
-  tags: [install, desktop, terminal]

@@ -1,18 +1,27 @@
 ---
+# =========================================================
+# Bitwarden Deployment & Authentication Workflow
+# =========================================================
+
 # ---------------------------------------------------------
 # 1. macOS Installation (Desktop & CLI)
 # ---------------------------------------------------------
-- name: Install Bitwarden Desktop and CLI via Homebrew Cask
+- name: Install Bitwarden Desktop (macOS)
   community.general.homebrew_cask:
-    name:
-      - bitwarden
-      - bitwarden-cli
+    name: bitwarden
+    state: present
+  when: ansible_os_family == 'Darwin'
+  tags: [bitwarden, install, macos]
+
+- name: Install Bitwarden CLI (macOS)
+  community.general.homebrew:
+    name: bitwarden-cli
     state: present
   when: ansible_os_family == 'Darwin'
   tags: [bitwarden, install, macos]
 
 # ---------------------------------------------------------
-# 2. Ubuntu Installation (Desktop DEB & CLI via FNM)
+# 2. Ubuntu Installation (Desktop DEB & Native CLI)
 # ---------------------------------------------------------
 - name: Install Bitwarden Desktop via DEB (Ubuntu)
   block:
@@ -30,33 +39,25 @@
   when: ansible_os_family == 'Debian'
   tags: [bitwarden, install, ubuntu]
 
-- name: Install Bitwarden CLI via FNM (Ubuntu)
-  ansible.builtin.shell:
-    # No sudo (become) needed here because fnm is in user-space
-    cmd: "{{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest npm install -g @bitwarden/cli"
-  changed_when: false
+- name: Install Bitwarden CLI Native Binary (Ubuntu)
+  ansible.builtin.unarchive:
+    src: "https://vault.bitwarden.com/download/?app=cli&platform=linux&variant=zip"
+    dest: "/usr/local/bin"
+    remote_src: yes
+    mode: '0755'
+    creates: "/usr/local/bin/bw"
+  become: true
   when: ansible_os_family == 'Debian'
   tags: [bitwarden, install, ubuntu]
 
 # ---------------------------------------------------------
 # 3. Security: Session Validation & Unlock Prompt
 # ---------------------------------------------------------
-- name: Determine Bitwarden CLI command context
-  ansible.builtin.set_fact:
-    bw_cmd: >-
-      {% if ansible_os_family == 'Debian' %}
-      {{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest bw
-      {% else %}
-      bw
-      {% endif %}
-  tags: [always, security]
-
 - name: Verify Bitwarden authentication status
   ansible.builtin.shell:
-    cmd: "{{ bw_cmd }} status | jq -r .status"
+    cmd: "bw status | jq -r .status"
   register: bw_status
   changed_when: false
-  # Fail-safe: if jq or bw isn't ready yet, skip the check to prevent crashing
   failed_when: false
   tags: [always, security]
 

@@ -48,9 +48,25 @@
       ansible.builtin.import_tasks: tasks/008-docker.yml
       tags: [install, docker]
 
-    - name: 009 Install DEV Tools Go PHP Rust and Debug Adapter
-      ansible.builtin.import_tasks: tasks/009-dev-tools.yml
+    - name: 009 Install CLI Tools
+      ansible.builtin.import_tasks: tasks/009-cli-tools.yml
+      tags: [install, dev, cli]
+
+    - name: 010 Install DEV Tools Go PHP Rust and Debug Adapter
+      ansible.builtin.import_tasks: tasks/010-dev-tools.yml
       tags: [install, dev, programming]
+
+    - name: 011 Install Database tools
+      ansible.builtin.import_tasks: tasks/011-db-tools.yml
+      tags: [install, dev, database]
+
+    - name: 020 Install web browsers
+      ansible.builtin.import_tasks: tasks/020-browsers.yml
+      tags: [install, desktop]
+
+    - name: 025 Install sway desktop and daemons
+      ansible.builtin.import_tasks: tasks/025-sway.yml
+      tags: [install, desktop, sway]
 
     - name: 045 Install Neovim Runtime Dependencies
       ansible.builtin.import_tasks: tasks/045-neovim-deps.yml

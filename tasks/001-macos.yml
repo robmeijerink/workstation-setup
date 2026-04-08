@@ -7,31 +7,8 @@
     name:
       - curl
       - git
-      - coreutils
-      - stow
-      - tmux
-      - fzf
-      - ripgrep         # Telescope.nvim dep
-      - fd              # Telescope.nvim dep
-      - sd
-      - jq
-      - yq
-      - zoxide
-      - bat
-      - eza
-      - lazygit
-      - lazydocker
-      - git-delta
-      - gum
-      - ms-jpq/sad/sad
-      - chafa
-      - php-code-sniffer
       - zsh
       - htop
-      - tree-sitter     # lspsaga dep
-      - stylua
-      - prettierd
-      - lnav
     state: present
     update_homebrew: yes
   when: ansible_os_family == 'Darwin'

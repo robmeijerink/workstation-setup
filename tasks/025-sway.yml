@@ -1,0 +1,51 @@
+
+---
+# =========================================================
+# Wayland & Sway Desktop Infrastructure
+# =========================================================
+
+# ---------------------------------------------------------
+# 1. Core Desktop Components
+# ---------------------------------------------------------
+- name: Install Sway compositor and essential UI components
+  ansible.builtin.apt:
+    name:
+      - sway
+      - swaybg
+      - swayidle
+      - swaylock
+      - waybar
+      - wofi
+      - mako-notifier
+      - xwayland
+      - xdg-desktop-portal-wlr
+    state: present
+  become: true
+  tags: [install, desktop, sway]
+
+- name: Install Desktop bridges
+  ansible.builtin.apt:
+    name:
+      - polkit-kde-agent-1
+      - udiskie
+      - udisks2
+    state: present
+  become: true
+  tags: [install, desktop, bridges]
+
+# ---------------------------------------------------------
+# 2. Hardware Daemons
+# ---------------------------------------------------------
+- name: Install hardware daemons (Audio, Network, Bluetooth)
+  ansible.builtin.apt:
+    name:
+      - pipewire
+      - pipewire-pulse
+      - wireplumber
+      - network-manager
+      - bluez
+      - blueman
+      - pavucontrol
+    state: present
+  become: true
+  tags: [install, desktop, daemons]

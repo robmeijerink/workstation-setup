@@ -95,6 +95,10 @@
       ansible.builtin.import_tasks: tasks/085-office.yml
       tags: [optional, office]
 
+    - name: 090 Installs firewall
+      ansible.builtin.import_tasks: tasks/090-firewall.yml
+      tags: [install, firewall]
+
     # =========================================================
     # PHASE 2: PERSONAL CONFIGURATION (100+)
     # =========================================================

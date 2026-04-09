@@ -1,0 +1,26 @@
+---
+- name: Install and Configure AeroSpace on macOS
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # Ensure homebrew is in the path for Intel/Apple Silicon
+    homebrew_bin: "{{ '/opt/homebrew/bin/brew' if ansible_architecture == 'arm64' else '/usr/local/bin/brew' }}"
+
+  tasks:
+    - name: Ensure AeroSpace is installed via Homebrew Cask
+      community.general.homebrew_cask:
+        name: aerospace
+        state: present
+        update_homebrew: true
+
+    - name: Verify AeroSpace installation
+      ansible.builtin.command:
+        cmd: "aerospace --version"
+      register: aerospace_version
+      changed_when: false
+
+    - name: Report version
+      ansible.builtin.debug:
+        msg: "AeroSpace installed: {{ aerospace_version.stdout }}"

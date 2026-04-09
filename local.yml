@@ -66,7 +66,13 @@
 
     - name: 025 Install sway desktop and daemons
       ansible.builtin.import_tasks: tasks/025-sway.yml
+      when: ansible_os_family == 'Debian'
       tags: [install, desktop, sway]
+
+    - name: 030 Install aerospace window tiling
+      ansible.builtin.import_tasks: tasks/030-aerospace.yml
+      when: ansible_os_family == 'Darwin'
+      tags: [install, desktop, aerospace]
 
     - name: 045 Install Neovim Runtime Dependencies
       ansible.builtin.import_tasks: tasks/045-neovim-deps.yml
@@ -90,7 +96,7 @@
       tags: [optional, office]
 
     # =========================================================
-      # PHASE 2: PERSONAL CONFIGURATION (100+)
+    # PHASE 2: PERSONAL CONFIGURATION (100+)
     # =========================================================
 
     - name: 100 Shell Zsh Configuration and Zap Plugins
@@ -106,7 +112,7 @@
       tags: [config, tmuxgs]
 
     # ---------------------------------------------------------
-      # Final Step: System Reboot Handler
+    # Final Step: System Reboot Handler
     # ---------------------------------------------------------
     - name: Check if a reboot is required Ubuntu
       ansible.builtin.stat:

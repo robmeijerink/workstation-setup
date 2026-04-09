@@ -1,27 +1,75 @@
 ---
-# ---------------------------------------------------------
-# 1. Install Base System Dependencies (macOS)
-# ---------------------------------------------------------
-- name: Ensure Homebrew is up to date and install core CLI tools
-  community.general.homebrew:
-    name:
-      - curl
-      - git
-      - zsh
-      - htop
-    state: present
-    update_homebrew: yes
-  when: ansible_os_family == 'Darwin'
-  tags: [install, base, macos]
+# =========================================================
+# macOS Base Configuration Playbook
+# =========================================================
+- name: macOS Base Installation & Configuration
+  hosts: localhost
+  connection: local
+  gather_facts: true
 
-# ---------------------------------------------------------
-# 2. System Level Tweak: macOS Key Repeat
-# ---------------------------------------------------------
-- name: Disable macOS ApplePressAndHoldEnabled for Neovim navigation
-  community.general.osx_defaults:
-    domain: NSGlobalDomain
-    key: ApplePressAndHoldEnabled
-    type: bool
-    value: false
-  when: ansible_os_family == 'Darwin'
-  tags: [config, base, macos, nvim]
+  tasks:
+    # ---------------------------------------------------------
+    # 1. Install Base System Dependencies (macOS)
+    # ---------------------------------------------------------
+    - name: Ensure Homebrew is up to date and install core CLI tools
+      community.general.homebrew:
+        name:
+          - curl
+          - git
+          - zsh
+          - htop
+          - gnupg
+          - pinentry-mac
+          - unzip
+        state: present
+        update_homebrew: yes
+      when: ansible_os_family == 'Darwin'
+      tags: [install, base, macos]
+
+    # ---------------------------------------------------------
+    # 2. System Level Tweaks: Keyboard & Ergonomics (Neovim)
+    # ---------------------------------------------------------
+    - name: Disable macOS ApplePressAndHoldEnabled for Neovim navigation
+      community.general.osx_defaults:
+        domain: NSGlobalDomain
+        key: ApplePressAndHoldEnabled
+        type: bool
+        value: false
+      when: ansible_os_family == 'Darwin'
+      tags: [config, base, macos, nvim, keyboard]
+
+    - name: Set blazing fast key repeat rate (O(1) cursor movement)
+      community.general.osx_defaults:
+        domain: NSGlobalDomain
+        key: "{{ item.key }}"
+        type: int
+        value: "{{ item.value }}"
+      loop:
+        - { key: "KeyRepeat", value: 2 }
+        - { key: "InitialKeyRepeat", value: 15 }
+      when: ansible_os_family == 'Darwin'
+      tags: [config, base, macos, nvim, keyboard]
+
+    # ---------------------------------------------------------
+    # 3. System Level Tweaks: Finder & File System Hygiene
+    # ---------------------------------------------------------
+    - name: Show hidden files in Finder by default
+      community.general.osx_defaults:
+        domain: com.apple.finder
+        key: AppleShowAllFiles
+        type: bool
+        value: true
+      when: ansible_os_family == 'Darwin'
+      tags: [config, base, macos, finder]
+
+    - name: Avoid creating .DS_Store files on network or USB volumes
+      community.general.osx_defaults:
+        domain: com.apple.desktopservices
+        key: "{{ item }}"
+        type: bool
+        value: true
+      loop:
+        - DSDontWriteNetworkStores
+        - DSDontWriteUSBStores
+      when: ansible_os_family == 'Darwin'
+      tags: [config, base, macos, finder]

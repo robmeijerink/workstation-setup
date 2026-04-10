@@ -1,4 +1,3 @@
-
 ---
 # =========================================================
 # Wayland & Sway Desktop Infrastructure
@@ -17,8 +16,18 @@
       - waybar
       - wofi
       - mako-notifier
+      # Wayland Display Server Bridges
       - xwayland
       - xdg-desktop-portal-wlr
+      - qtwayland5
+      # Hardware & Media Control
+      - brightnessctl
+      - pulseaudio-utils
+      - pavucontrol
+      # Wayland Native Utilities
+      - grim
+      - slurp
+      - network-manager-gnome
     state: present
   become: true
   tags: [install, desktop, sway]
@@ -49,3 +58,4 @@
     state: present
   become: true
   tags: [install, desktop, daemons]
+

@@ -29,7 +29,7 @@
       ansible.builtin.get_url:
         url: "https://vault.bitwarden.com/download/?app=desktop&platform=linux&variant=deb"
         dest: "/tmp/bitwarden.deb"
-        mode: '0644'
+        mode: "0644"
 
     - name: Install Bitwarden Desktop
       ansible.builtin.apt:
@@ -44,14 +44,14 @@
     src: "https://vault.bitwarden.com/download/?app=cli&platform=linux&variant=zip"
     dest: "/usr/local/bin"
     remote_src: yes
-    mode: '0755'
+    mode: "0755"
     creates: "/usr/local/bin/bw"
   become: true
   when: ansible_os_family == 'Debian'
   tags: [bitwarden, install, ubuntu]
 
 # ---------------------------------------------------------
-# 3. Security: Session Validation & Unlock Prompt
+# 3. Security: Session Validation
 # ---------------------------------------------------------
 - name: Verify Bitwarden authentication status
   ansible.builtin.shell:
@@ -59,22 +59,4 @@
   register: bw_status
   changed_when: false
   failed_when: false
-  tags: [always, security]
-
-- name: Bitwarden Session Check
-  ansible.builtin.pause:
-    prompt: |
-      [SECURITY CHECK]
-      Bitwarden is installed but not unlocked.
-
-      To deploy your SSH/GPG keys in the next steps:
-      1. Open a new terminal.
-      2. Run: export BW_SESSION=$(bw login --raw)  (or 'bw unlock --raw')
-      3. Paste that token in this terminal as an environment variable or simply
-         ensure 'bw status' returns 'unlocked' before continuing.
-
-      Press ENTER to continue once your vault is accessible.
-  when:
-    - bw_status.stdout is defined
-    - bw_status.stdout != "unlocked"
   tags: [always, security]

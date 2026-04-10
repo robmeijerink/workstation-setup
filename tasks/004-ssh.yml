@@ -13,30 +13,7 @@
   tags: [always, ssh, security]
 
 # ---------------------------------------------------------
-# 2. Validation: Check if Agent is Active
-# ---------------------------------------------------------
-- name: Verify Bitwarden SSH Agent socket existence
-  ansible.builtin.stat:
-    path: "{{ bw_ssh_socket }}"
-  register: bw_socket_stat
-  tags: [ssh, security]
-
-- name: Pause for manual Bitwarden SSH configuration
-  ansible.builtin.pause:
-    prompt: |
-      [SECURITY ACTION] SSH Agent socket not found at: {{ bw_ssh_socket }}
-
-      1. Open Bitwarden Desktop.
-      2. Settings > Privacy & Security > Enable SSH Agent.
-      3. (Ubuntu) Set 'Agent Socket' path to: ~/.bitwarden-ssh-agent.sock
-      4. Ensure your keys are stored as 'SSH Key' type in your vault.
-
-      Press ENTER once the agent is active...
-  when: not bw_socket_stat.stat.exists
-  tags: [ssh, security, manual_step]
-
-# ---------------------------------------------------------
-# 3. Directory and File Permissions
+# 2. Directory and File Permissions
 # ---------------------------------------------------------
 - name: Ensure SSH directories and files are secure
   block:
@@ -44,26 +21,26 @@
       ansible.builtin.file:
         path: "{{ lookup('env', 'HOME') }}/.ssh"
         state: directory
-        mode: '0700'
+        mode: "0700"
 
     - name: Ensure known_hosts exists
       ansible.builtin.file:
         path: "{{ lookup('env', 'HOME') }}/.ssh/known_hosts"
         state: touch
-        mode: '0600'
+        mode: "0600"
         modification_time: preserve
         access_time: preserve
   tags: [ssh, security]
 
 # ---------------------------------------------------------
-# 4. Configure ~/.ssh/config for Zero-Disk Policy
+# 3. Configure ~/.ssh/config for Zero-Disk Policy
 # ---------------------------------------------------------
 - name: Apply SSH config for Bitwarden Agent integration
   ansible.builtin.copy:
     dest: "{{ lookup('env', 'HOME') }}/.ssh/config"
-    mode: '0600'
+    mode: "0600"
     content: |
-      # Managed by Ansible - RobMeijerink Workstation Setup
+      # Managed by Ansible - Workstation Setup
 
       Host *
           # ZERO-DISK POLICY: Keys are served directly from Bitwarden memory
@@ -77,19 +54,3 @@
           # Essential for modern OpenSSH
           AddKeysToAgent yes
   tags: [ssh, security]
-
-# ---------------------------------------------------------
-# 5. Final Validation: Verify Agent Communication
-# ---------------------------------------------------------
-- name: Verify if SSH Agent is serving keys
-  ansible.builtin.shell: ssh-add -l
-  register: ssh_add_output
-  failed_when: false
-  changed_when: false
-  tags: [ssh, validation]
-
-- name: Warn if no keys are found in agent
-  ansible.builtin.debug:
-    msg: "WARNING: SSH Agent is active, but no keys were found. Ensure keys are in Bitwarden and 'Enable SSH Agent' is checked."
-  when: ssh_add_output.rc != 0
-  tags: [ssh, validation]

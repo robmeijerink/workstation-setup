@@ -13,11 +13,12 @@
   tags: [install, dev, runtimes]
 
 - name: Ensure asdf plugins are present for parity
-  ansible.builtin.shell: |
-    # Add plugins only if they don't exist
-    for plugin in golang php python kubectl; do
-      asdf plugin add $plugin || true
-    done
+  ansible.builtin.shell: 
+    cmd: |
+      # Add plugins only if they don't exist
+      for plugin in golang php python kubectl; do
+        asdf plugin add $plugin || true
+      done
   tags: [install, dev, runtimes]
 
 # 2. Ubuntu Specific: System Libraries (Required for asdf runtimes)

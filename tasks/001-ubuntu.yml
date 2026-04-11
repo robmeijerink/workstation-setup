@@ -1,129 +1,115 @@
 ---
 # =========================================================
 # Ubuntu Server Base Playbook
-# =========================================================
-- name: Ubuntu Base Installation & Hardening
-  hosts: localhost
-  become: true
+# ========================================================
+# ---------------------------------------------------------
+# 1. Install Base System Requirements via APT
+# ---------------------------------------------------------
+- name: Install core system requirements for Ubuntu
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - openssh-server
+      - procps
+      - curl
+      - file
+      - git
+      - ca-certificates
+      - zsh
+      - htop
+      - wl-clipboard
+      - gnupg2
+      - gnupg-agent
+      - pinentry-curses
+      - dbus-user-session
+      - gnome-keyring
+      - libsecret-1-0
+      - unzip
+      - zip
+      - 7zip
+    state: present
+    update_cache: yes
+  tags: [install, base, ubuntu]
 
-  tasks:
-    # ---------------------------------------------------------
-    # 1. Install Base System Requirements via APT
-    # ---------------------------------------------------------
-    - name: Install core system requirements for Ubuntu
-      ansible.builtin.apt:
-        name:
-          - build-essential
-          - openssh-server
-          - procps
-          - curl
-          - file
-          - git
-          - ca-certificates
-          - zsh
-          - htop
-          - wl-clipboard
-          - gnupg2
-          - gnupg-agent
-          - pinentry-curses
-          - dbus-user-session
-          - gnome-keyring
-          - libsecret-1-0
-          - unzip
-          - zip
-          - 7zip
-        state: present
-        update_cache: yes
-      tags: [install, base, ubuntu]
+# ---------------------------------------------------------
+# 2. Bootstrap Homebrew on Linux
+# ---------------------------------------------------------
+- name: Check if Homebrew is already installed
+  ansible.builtin.stat:
+    path: /home/linuxbrew/.linuxbrew/bin/brew
+  register: linuxbrew_check
+  tags: [install, base, brew]
 
-    # ---------------------------------------------------------
-    # 2. Bootstrap Homebrew on Linux
-    # ---------------------------------------------------------
-    - name: Check if Homebrew is already installed
-      ansible.builtin.stat:
-        path: /home/linuxbrew/.linuxbrew/bin/brew
-      register: linuxbrew_check
-      tags: [install, base, brew]
+- name: Install Homebrew (Linuxbrew) silently
+  ansible.builtin.shell:
+    cmd: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  environment:
+    NONINTERACTIVE: "1"
+  when: not linuxbrew_check.stat.exists
+  tags: [install, base, brew]
 
-    - name: Install Homebrew (Linuxbrew) silently
-      ansible.builtin.shell:
-        cmd: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-      environment:
-        NONINTERACTIVE: "1"
-      when: not linuxbrew_check.stat.exists
-      tags: [install, base, brew]
+# ---------------------------------------------------------
+# 3. PERFORMANCE: Inotify Watchers (Crucial for Node/Vite)
+# ---------------------------------------------------------
+- name: Increase inotify max_user_watches for development
+  ansible.posix.sysctl:
+    name: fs.inotify.max_user_watches
+    value: "524288"
+    state: present
+    reload: yes
+  tags: [config, performance, ubuntu]
 
-    # ---------------------------------------------------------
-    # 3. PERFORMANCE: Inotify Watchers (Crucial for Node/Vite)
-    # ---------------------------------------------------------
-    - name: Increase inotify max_user_watches for development
-      ansible.posix.sysctl:
-        name: fs.inotify.max_user_watches
-        value: "524288"
-        state: present
-        reload: yes
-      tags: [config, performance, ubuntu]
+# ---------------------------------------------------------
+# 4. SECURITY: SSH Hardening
+# ---------------------------------------------------------
+- name: Disable SSH Password Authentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?PasswordAuthentication"
+    line: "PasswordAuthentication no"
+    validate: "/usr/sbin/sshd -t -f %s"
+  notify: Restart SSH
+  tags: [config, security, ssh]
 
-    # ---------------------------------------------------------
-    # 4. SECURITY: SSH Hardening
-    # ---------------------------------------------------------
-    - name: Disable SSH Password Authentication
-      ansible.builtin.lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: "^#?PasswordAuthentication"
-        line: "PasswordAuthentication no"
-        validate: "/usr/sbin/sshd -t -f %s"
-      notify: Restart SSH
-      tags: [config, security, ssh]
+- name: Disable SSH Root Login
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?PermitRootLogin"
+    line: "PermitRootLogin no"
+    validate: "/usr/sbin/sshd -t -f %s"
+  notify: Restart SSH
+  tags: [config, security, ssh]
 
-    - name: Disable SSH Root Login
-      ansible.builtin.lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: "^#?PermitRootLogin"
-        line: "PermitRootLogin no"
-        validate: "/usr/sbin/sshd -t -f %s"
-      notify: Restart SSH
-      tags: [config, security, ssh]
+# ---------------------------------------------------------
+# 5. SECURITY: Unattended Upgrades
+# ---------------------------------------------------------
+- name: Install unattended-upgrades package
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+  tags: [config, security, updates]
 
-    # ---------------------------------------------------------
-    # 5. SECURITY: Unattended Upgrades
-    # ---------------------------------------------------------
-    - name: Install unattended-upgrades package
-      ansible.builtin.apt:
-        name: unattended-upgrades
-        state: present
-      tags: [config, security, updates]
+- name: Configure Unattended Upgrades (Security Only, No Auto-Reboot)
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/99-rob-custom-upgrades
+    content: |
+      // 1. Enable automatic daily updates
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
 
-    - name: Configure Unattended Upgrades (Security Only, No Auto-Reboot)
-      ansible.builtin.copy:
-        dest: /etc/apt/apt.conf.d/99-rob-custom-upgrades
-        content: |
-          // 1. Enable automatic daily updates
-          APT::Periodic::Update-Package-Lists "1";
-          APT::Periodic::Unattended-Upgrade "1";
+      // 2. STRICTLY limit to Security Updates only
+      Unattended-Upgrade::Allowed-Origins {
+          "${distro_id}:${distro_codename}-security";
+          "${distro_id}ESMApps:${distro_codename}-apps-security";
+          "${distro_id}ESM:${distro_codename}-infra-security";
+      };
 
-          // 2. STRICTLY limit to Security Updates only
-          Unattended-Upgrade::Allowed-Origins {
-              "${distro_id}:${distro_codename}-security";
-              "${distro_id}ESMApps:${distro_codename}-apps-security";
-              "${distro_id}ESM:${distro_codename}-infra-security";
-          };
+      // 3. Workflow Protection: Never reboot automatically
+      Unattended-Upgrade::Automatic-Reboot "false";
 
-          // 3. Workflow Protection: Never reboot automatically
-          Unattended-Upgrade::Automatic-Reboot "false";
-
-          // 4. Maintenance: Auto-remove obsolete dependencies
-          Unattended-Upgrade::Remove-Unused-Dependencies "true";
-        mode: "0644"
-        owner: root
-        group: root
-      tags: [config, security, updates]
-
-  # =========================================================
-  # HANDLERS (Must ALWAYS be at the end of the play)
-  # =========================================================
-  handlers:
-    - name: Restart SSH
-      ansible.builtin.service:
-        name: ssh
-        state: restarted
+      // 4. Maintenance: Auto-remove obsolete dependencies
+      Unattended-Upgrade::Remove-Unused-Dependencies "true";
+    mode: "0644"
+    owner: root
+    group: root
+  tags: [config, security, updates]

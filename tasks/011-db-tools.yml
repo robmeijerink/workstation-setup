@@ -3,52 +3,49 @@
 # Database Client Infrastructure
 # =========================================================
 
-- name: Deploy Database Tools
-  hosts: localhost
-  tasks:
-    - name: Install Database Utilities on Ubuntu
-      block:
-        - name: Install Native CLI Clients
-          ansible.builtin.apt:
-            name:
-              - postgresql-client
-              - mariadb-client
-              - sqlite3
-            state: present
-            update_cache: yes
-          become: true
+- name: Install Database Utilities on Ubuntu
+  block:
+    - name: Install Native CLI Clients
+      ansible.builtin.apt:
+        name:
+          - postgresql-client
+          - mariadb-client
+          - sqlite3
+        state: present
+        update_cache: yes
+      become: true
 
-        - name: Add TablePlus GPG Key
-          ansible.builtin.apt_key:
-            url: https://deb.tableplus.com/apt.tableplus.com.gpg.key
-            state: present
-          become: true
+    - name: Add TablePlus GPG Key
+      ansible.builtin.apt_key:
+        url: https://deb.tableplus.com/apt.tableplus.com.gpg.key
+        state: present
+      become: true
 
-        - name: Add TablePlus Repository
-          ansible.builtin.apt_repository:
-            repo: "deb [arch=amd64] https://deb.tableplus.com/debian/24 tableplus main"
-            state: present
-          become: true
+    - name: Add TablePlus Repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://deb.tableplus.com/debian/24 tableplus main"
+        state: present
+      become: true
 
-        - name: Install TablePlus (Linux Native)
-          ansible.builtin.apt:
-            name: tableplus
-            state: present
-          become: true
-      when: ansible_os_family == 'Debian'
+    - name: Install TablePlus (Linux Native)
+      ansible.builtin.apt:
+        name: tableplus
+        state: present
+      become: true
+  when: ansible_os_family == 'Debian'
 
-    - name: Install Database Utilities on macOS
-      block:
-        - name: Install native CLI clients (Keg-only)
-          community.general.homebrew:
-            name:
-              - libpq
-              - mysql-client
-              - sqlite
-            state: present
+- name: Install Database Utilities on macOS
+  block:
+    - name: Install native CLI clients (Keg-only)
+      community.general.homebrew:
+        name:
+          - libpq
+          - mysql-client
+          - sqlite
+        state: present
 
-        - name: Install TablePlus (macOS GUI)
-          community.general.homebrew_cask:
-            name: tableplus
-            state: present
-      when: ansible_os_family == 'Darwin'
+    - name: Install TablePlus (macOS GUI)
+      community.general.homebrew_cask:
+        name: tableplus
+        state: present
+  when: ansible_os_family == 'Darwin'

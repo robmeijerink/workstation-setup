@@ -3,51 +3,48 @@
 # GPG & Agent Configuration - Multi-OS (macOS & Ubuntu)
 # =========================================================
 
-- name: Configure GPG Infrastructure
-  hosts: localhost
-  tasks:
-    - name: Ensure ~/.gnupg exists with strict permissions
-      ansible.builtin.file:
-        path: "{{ ansible_env.HOME }}/.gnupg"
-        state: directory
-        mode: '0700'
+- name: Ensure ~/.gnupg exists with strict permissions
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.gnupg"
+    state: directory
+    mode: '0700'
 
-    - name: Configure gpg.conf
-      ansible.builtin.copy:
-        dest: "{{ ansible_env.HOME }}/.gnupg/gpg.conf"
-        mode: '0600'
-        content: |
-          # Professional GPG Standards
-          no-greeting
-          no-emit-version
-          charset utf-8
-          use-agent
-          keyserver hkps://keys.openpgp.org
+- name: Configure gpg.conf
+  ansible.builtin.copy:
+    dest: "{{ ansible_env.HOME }}/.gnupg/gpg.conf"
+    mode: '0600'
+    content: |
+      # Professional GPG Standards
+      no-greeting
+      no-emit-version
+      charset utf-8
+      use-agent
+      keyserver hkps://keys.openpgp.org
 
-    - name: Determine Pinentry path based on OS and Architecture
-      ansible.builtin.set_fact:
-        gpg_pinentry_executable: >-
-          {% if ansible_os_family == 'Darwin' %}
-            {% if ansible_machine == 'x86_64' %}/usr/local/bin/pinentry-mac
-            {% else %}/opt/homebrew/bin/pinentry-mac{% endif %}
-          {% else %}/usr/bin/pinentry-curses{% endif %}
+- name: Determine Pinentry path based on OS and Architecture
+  ansible.builtin.set_fact:
+    gpg_pinentry_executable: >-
+      {% if ansible_os_family == 'Darwin' %}
+        {% if ansible_machine == 'x86_64' %}/usr/local/bin/pinentry-mac
+        {% else %}/opt/homebrew/bin/pinentry-mac{% endif %}
+      {% else %}/usr/bin/pinentry-curses{% endif %}
 
-    - name: Configure gpg-agent.conf for {{ ansible_os_family }}
-      ansible.builtin.copy:
-        dest: "{{ ansible_env.HOME }}/.gnupg/gpg-agent.conf"
-        mode: '0600'
-        content: |
-          # Cache settings (8 hours)
-          default-cache-ttl 28800
-          max-cache-ttl 28800
+- name: Configure gpg-agent.conf for {{ ansible_os_family }}
+  ansible.builtin.copy:
+    dest: "{{ ansible_env.HOME }}/.gnupg/gpg-agent.conf"
+    mode: '0600'
+    content: |
+      # Cache settings (8 hours)
+      default-cache-ttl 28800
+      max-cache-ttl 28800
 
-          # OS-Specific Pinentry
-          pinentry-program {{ gpg_pinentry_executable }}
+      # OS-Specific Pinentry
+      pinentry-program {{ gpg_pinentry_executable }}
 
-          # Headless & Wayland optimization
-          allow-loopback-pinentry
-          enable-ssh-support
+      # Headless & Wayland optimization
+      allow-loopback-pinentry
+      enable-ssh-support
 
-    - name: Restart gpg-agent to apply new rules
-      ansible.builtin.command: gpgconf --kill gpg-agent
-      changed_when: false
+- name: Restart gpg-agent to apply new rules
+  ansible.builtin.command: gpgconf --kill gpg-agent
+  changed_when: false

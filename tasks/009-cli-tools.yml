@@ -2,54 +2,50 @@
 # =========================================================
 # Cross-Platform CLI Utilities
 # =========================================================
+- name: Install shared cross-platform CLI tools via Homebrew
+  community.general.homebrew:
+    name:
+      - stow
+      - tmux
+      - fzf
+      - ripgrep
+      - fd
+      - sd
+      - jq
+      - yq
+      - zoxide
+      - bat
+      - eza
+      - lazygit
+      - lazydocker
+      - git-delta
+      - gum
+      - chafa
+      - php-code-sniffer
+      - tree-sitter
+      - stylua
+      - prettierd
+      - lnav
+      - k9s
+    state: present
+    update_homebrew: yes
+    path: "{{ '/home/linuxbrew/.linuxbrew/bin' if ansible_os_family == 'Debian' else omit }}"
+  tags: [install, cli, tools]
 
-- name: Deploy CLI Utilities
-  hosts: localhost
-  tasks:
-    - name: Install shared cross-platform CLI tools via Homebrew
-      community.general.homebrew:
-        name:
-          - stow
-          - tmux
-          - fzf
-          - ripgrep
-          - fd
-          - sd
-          - jq
-          - yq
-          - zoxide
-          - bat
-          - eza
-          - lazygit
-          - lazydocker
-          - git-delta
-          - gum
-          - chafa
-          - php-code-sniffer
-          - tree-sitter
-          - stylua
-          - prettierd
-          - lnav
-          - k9s
-        state: present
-        update_homebrew: yes
-        path: "{{ '/home/linuxbrew/.linuxbrew/bin' if ansible_os_family == 'Debian' else omit }}"
-      tags: [install, cli, tools]
+- name: Install macOS specific Homebrew packages
+  community.general.homebrew:
+    name:
+      - coreutils
+      - ms-jpq/sad/sad
+    state: present
+  when: ansible_os_family == 'Darwin'
+  tags: [install, cli, tools, macos]
 
-    - name: Install macOS specific Homebrew packages
-      community.general.homebrew:
-        name:
-          - coreutils
-          - ms-jpq/sad/sad
-        state: present
-      when: ansible_os_family == 'Darwin'
-      tags: [install, cli, tools, macos]
-
-    - name: Install Linux specific Homebrew packages
-      community.general.homebrew:
-        name:
-          - sad
-        state: present
-        path: /home/linuxbrew/.linuxbrew/bin
-      when: ansible_os_family == 'Debian'
-      tags: [install, cli, tools, ubuntu]
+- name: Install Linux specific Homebrew packages
+  community.general.homebrew:
+    name:
+      - sad
+    state: present
+    path: /home/linuxbrew/.linuxbrew/bin
+  when: ansible_os_family == 'Debian'
+  tags: [install, cli, tools, ubuntu]

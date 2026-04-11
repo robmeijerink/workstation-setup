@@ -1,85 +1,79 @@
 ---
-- name: Firewall Security Baseline
-  hosts: localhost
-  become: true
-  gather_facts: true
+# =========================================================
+# UBUNTU / LINUX (UFW)
+# =========================================================
+- name: Ubuntu | Ensure UFW is installed
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
 
-  tasks:
-    # =========================================================
-    # UBUNTU / LINUX (UFW)
-    # =========================================================
-    - name: Ubuntu | Ensure UFW is installed
-      ansible.builtin.apt:
-        name: ufw
-        state: present
-        update_cache: yes
-      when: ansible_os_family == "Debian"
+- name: Ubuntu | Reset UFW to factory defaults
+  community.general.ufw:
+    state: reset
+  when: ansible_os_family == "Debian"
 
-    - name: Ubuntu | Reset UFW to factory defaults
-      community.general.ufw:
-        state: reset
-      when: ansible_os_family == "Debian"
+- name: Ubuntu | Set default incoming policy to DENY
+  community.general.ufw:
+    direction: incoming
+    policy: deny
+  when: ansible_os_family == "Debian"
 
-    - name: Ubuntu | Set default incoming policy to DENY
-      community.general.ufw:
-        direction: incoming
-        policy: deny
-      when: ansible_os_family == "Debian"
+- name: Ubuntu | Set default outgoing policy to ALLOW
+  community.general.ufw:
+    direction: outgoing
+    policy: allow
+  when: ansible_os_family == "Debian"
 
-    - name: Ubuntu | Set default outgoing policy to ALLOW
-      community.general.ufw:
-        direction: outgoing
-        policy: allow
-      when: ansible_os_family == "Debian"
+- name: Ubuntu | Allow SSH with rate limiting
+  community.general.ufw:
+    rule: limit
+    port: ssh
+    proto: tcp
+  when: ansible_os_family == "Debian"
 
-    - name: Ubuntu | Allow SSH with rate limiting
-      community.general.ufw:
-        rule: limit
-        port: ssh
-        proto: tcp
-      when: ansible_os_family == "Debian"
+- name: Ubuntu | Allow standard web traffic
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - 80
+    - 443
+  when: ansible_os_family == "Debian"
 
-    - name: Ubuntu | Allow standard web traffic
-      community.general.ufw:
-        rule: allow
-        port: "{{ item }}"
-        proto: tcp
-      loop:
-        - 80
-        - 443
-      when: ansible_os_family == "Debian"
+- name: Ubuntu | Enable UFW logging
+  community.general.ufw:
+    logging: "on"
+  when: ansible_os_family == "Debian"
 
-    - name: Ubuntu | Enable UFW logging
-      community.general.ufw:
-        logging: "on"
-      when: ansible_os_family == "Debian"
+- name: Ubuntu | Enable UFW and commit changes
+  community.general.ufw:
+    state: enabled
+  when: ansible_os_family == "Debian"
 
-    - name: Ubuntu | Enable UFW and commit changes
-      community.general.ufw:
-        state: enabled
-      when: ansible_os_family == "Debian"
+# =========================================================
+# MACOS (ALF)
+# =========================================================
+- name: macOS | Configure Native Firewall State
+  community.general.osx_defaults:
+    domain: /Library/Preferences/com.apple.alf
+    key: globalstate
+    value: 1
+    type: int
+  when: ansible_os_family == "Darwin"
 
-    # =========================================================
-    # MACOS (ALF)
-    # =========================================================
-    - name: macOS | Configure Native Firewall State
-      community.general.osx_defaults:
-        domain: /Library/Preferences/com.apple.alf
-        key: globalstate
-        value: 1
-        type: int
-      when: ansible_os_family == "Darwin"
+- name: macOS | Enable Stealth Mode
+  community.general.osx_defaults:
+    domain: /Library/Preferences/com.apple.alf
+    key: stealthenabled
+    value: 1
+    type: int
+  when: ansible_os_family == "Darwin"
 
-    - name: macOS | Enable Stealth Mode
-      community.general.osx_defaults:
-        domain: /Library/Preferences/com.apple.alf
-        key: stealthenabled
-        value: 1
-        type: int
-      when: ansible_os_family == "Darwin"
-
-    - name: macOS | Apply Firewall settings immediately
-      ansible.builtin.command:
-        cmd: "/usr/libexec/ApplicationFirewall/socketfilterfw --reload"
-      changed_when: false
-      when: ansible_os_family == "Darwin"
+- name: macOS | Apply Firewall settings immediately
+  ansible.builtin.command:
+    cmd: "/usr/libexec/ApplicationFirewall/socketfilterfw --reload"
+  changed_when: false
+  when: ansible_os_family == "Darwin"

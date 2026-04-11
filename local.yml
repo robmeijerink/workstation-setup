@@ -139,3 +139,12 @@
         - reboot_prompt.user_input is defined
         - reboot_prompt.user_input | lower == 'y'
       tags: [always]
+
+  # =========================================================
+  # HANDLERS (Must ALWAYS be at the end of the play)
+  # =========================================================
+  handlers:
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: ssh
+        state: restarted

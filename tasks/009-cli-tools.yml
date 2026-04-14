@@ -27,6 +27,7 @@
       - prettierd
       - lnav
       - k9s
+      - go-task
     state: present
     update_homebrew: yes
     path: "{{ '/home/linuxbrew/.linuxbrew/bin' if ansible_os_family == 'Debian' else omit }}"
@@ -49,3 +50,4 @@
     path: /home/linuxbrew/.linuxbrew/bin
   when: ansible_os_family == 'Debian'
   tags: [install, cli, tools, ubuntu]
+

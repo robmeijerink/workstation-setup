@@ -54,8 +54,20 @@
       - network-manager
       - bluez
       - blueman
-      - pavucontrol
     state: present
   become: true
   tags: [install, desktop, daemons]
 
+# ---------------------------------------------------------
+# 3. File Explorer
+# ---------------------------------------------------------
+- name: Install Thunar and file management utilities for Sway
+  ansible.builtin.apt:
+    name:
+      - thunar
+      - thunar-archive-plugin
+      - thunar-volman
+      - gvfs
+    state: present
+  become: true
+  tags: [install, desktop, filemanager]

@@ -82,10 +82,6 @@
       ansible.builtin.import_tasks: tasks/050-neovim.yml
       tags: [install, neovim]
 
-    - name: 055 Post-Install Neovim LSP and Mason
-      ansible.builtin.import_tasks: tasks/055-neovim-lsp.yml
-      tags: [install, neovim, lsp]
-
     - name: 080 Installs timeshift and defines backup strategy
       ansible.builtin.import_tasks: tasks/080-timeshift.yml
       when: ansible_os_family == 'Debian'
@@ -111,9 +107,13 @@
       ansible.builtin.import_tasks: tasks/150-dotfiles.yml
       tags: [config, dotfiles]
 
+    - name: 055 Post-Install Neovim LSP and Mason
+      ansible.builtin.import_tasks: tasks/055-neovim-lsp.yml
+      tags: [install, neovim, lsp]
+
     - name: 200 Configures tmux and plugin manager
       ansible.builtin.import_tasks: tasks/200-tmux.yml
-      tags: [config, tmuxgs]
+      tags: [config, tmux]
 
     # ---------------------------------------------------------
     # Final Step: System Reboot Handler
@@ -133,7 +133,7 @@
       tags: [always]
 
     - name: Rebooting machine
-      ansible.builtin.reboot:
+      ansible.builtin.shell: shutdown -r now
       become: true
       when:
         - reboot_prompt.user_input is defined
@@ -148,3 +148,4 @@
       ansible.builtin.service:
         name: ssh
         state: restarted
+      become: true

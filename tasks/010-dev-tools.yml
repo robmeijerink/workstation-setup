@@ -10,15 +10,32 @@
   community.general.homebrew:
     name: asdf
     state: present
+    path: "{{ '/home/linuxbrew/.linuxbrew/bin' if ansible_os_family == 'Debian' else omit }}"
   tags: [install, dev, runtimes]
 
 - name: Ensure asdf plugins are present for parity
-  ansible.builtin.shell: 
+  ansible.builtin.shell:
     cmd: |
-      # Add plugins only if they don't exist
       for plugin in golang php python kubectl; do
-        asdf plugin add $plugin || true
+        asdf plugin add $plugin 2>/dev/null || true
       done
+  environment:
+    PATH: "{{ ('/home/linuxbrew/.linuxbrew/bin:' if ansible_os_family == 'Debian' else '') + ansible_env.PATH }}"
+  changed_when: false
+  tags: [install, dev, runtimes]
+
+- name: Install and pin latest runtime versions via asdf
+  ansible.builtin.shell:
+    # Fully error-tolerant: a failed compile (e.g. php) never halts provisioning.
+    # Supports both asdf 0.16+ ('set') and legacy ('global') syntax.
+    cmd: |
+      for plugin in golang php python kubectl; do
+        asdf install "$plugin" latest 2>/dev/null || true
+        asdf set -u "$plugin" latest 2>/dev/null || asdf global "$plugin" latest 2>/dev/null || true
+      done
+  environment:
+    PATH: "{{ ('/home/linuxbrew/.linuxbrew/bin:' if ansible_os_family == 'Debian' else '') + ansible_env.PATH }}"
+  changed_when: false
   tags: [install, dev, runtimes]
 
 # 2. Ubuntu Specific: System Libraries (Required for asdf runtimes)

@@ -54,9 +54,14 @@
 # 3. Security: Session Validation
 # ---------------------------------------------------------
 - name: Verify Bitwarden authentication status
-  ansible.builtin.shell:
-    cmd: "bw status | jq -r .status"
+  ansible.builtin.command: bw status
   register: bw_status
   changed_when: false
   failed_when: false
+  tags: [always, security]
+
+- name: Warn if Bitwarden vault is not unlocked
+  ansible.builtin.debug:
+    msg: "Bitwarden vault is not unlocked. The dotfiles step (150) clones over SSH via the Bitwarden agent and will fail while the vault is locked."
+  when: "'unlocked' not in (bw_status.stdout | default(''))"
   tags: [always, security]

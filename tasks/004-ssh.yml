@@ -4,12 +4,7 @@
 # ---------------------------------------------------------
 - name: Set Bitwarden SSH Agent socket path
   ansible.builtin.set_fact:
-    bw_ssh_socket: >-
-      {% if ansible_os_family == 'Darwin' %}
-      {{ lookup('env', 'HOME') }}/Library/Group Containers/2M4LOGIN.com.8bit.bitwarden/t/ssh-agent.sock
-      {% else %}
-      {{ lookup('env', 'HOME') }}/.bitwarden-ssh-agent.sock
-      {% endif %}
+    bw_ssh_socket: "{{ ansible_env.HOME }}/.bitwarden-ssh-agent.sock"
   tags: [always, ssh, security]
 
 # ---------------------------------------------------------

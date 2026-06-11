@@ -23,11 +23,7 @@
 
 - name: Determine Pinentry path based on OS and Architecture
   ansible.builtin.set_fact:
-    gpg_pinentry_executable: >-
-      {% if ansible_os_family == 'Darwin' %}
-        {% if ansible_machine == 'x86_64' %}/usr/local/bin/pinentry-mac
-        {% else %}/opt/homebrew/bin/pinentry-mac{% endif %}
-      {% else %}/usr/bin/pinentry-curses{% endif %}
+    gpg_pinentry_executable: "{{ '/usr/local/bin/pinentry-mac' if ansible_os_family == 'Darwin' and ansible_machine == 'x86_64' else '/opt/homebrew/bin/pinentry-mac' if ansible_os_family == 'Darwin' else '/usr/bin/pinentry-curses' }}"
 
 - name: Configure gpg-agent.conf for {{ ansible_os_family }}
   ansible.builtin.copy:

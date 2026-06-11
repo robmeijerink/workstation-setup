@@ -7,6 +7,7 @@
   ansible.builtin.apt:
     name: timeshift
     state: present
+  become: true
   tags: [system, backup]
 
 - name: Ensure configuration directory exists
@@ -14,6 +15,7 @@
     path: /etc/timeshift
     state: directory
     mode: '0755'
+  become: true
   tags: [config, backup]
 
 - name: Determine Root Partition UUID for Timeshift target
@@ -49,7 +51,7 @@
         "snapshot_number": "3",
         "stop_on_low_space": "true",
         "exclude": [
-          "/home/rob/**",
+          "{{ ansible_env.HOME }}/**",
           "/root/**",
           "/tmp/**",
           "/var/tmp/**",
@@ -58,10 +60,12 @@
         ],
         "include": []
       }
+  become: true
   tags: [config, backup]
 
 - name: Create initial Boot snapshot to establish baseline
   ansible.builtin.command: timeshift --create --comments "Initial RobMeijerink Baseline"
   args:
     creates: /timeshift/snapshots/
+  become: true
   tags: [system, backup]

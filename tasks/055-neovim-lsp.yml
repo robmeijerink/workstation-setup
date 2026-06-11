@@ -24,3 +24,17 @@
   failed_when: lsp_verification.rc != 0
   changed_when: false
   tags: [config, neovim, lsp, validation]
+
+# ---------------------------------------------------------
+# 3. Headless Mason Sync (runs after dotfiles provide the config)
+# ---------------------------------------------------------
+- name: Trigger Mason to install LSPs headless
+  ansible.builtin.shell:
+    # We run nvim, let Mason do its thing based on your 'ensure_installed' list, and quit.
+    # This brings your environment to the desired state in O(n) time.
+    cmd: "nvim --headless -c 'MasonUpdate' -c 'qa'"
+  # We use 'changed_when: false' because Mason manages its own idempotency.
+  changed_when: false
+  # Never let a headless config hiccup halt provisioning.
+  failed_when: false
+  tags: [config, neovim, lsp, mason]

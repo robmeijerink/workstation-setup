@@ -35,7 +35,7 @@ fi
 
 # --- 2. Install Required Ansible Collections ---
 echo "Ensuring required Ansible Galaxy collections are present..."
-ansible-galaxy collection install community.general
+ansible-galaxy collection install community.general ansible.posix
 
 # --- 3. Repository Preparation ---
 echo "Cloning setup repository..."

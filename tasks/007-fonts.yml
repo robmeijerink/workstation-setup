@@ -1,29 +1,41 @@
 ---
-# ---------------------------------------------------------
-# 1. Fetch Latest Release Metadata from GitHub API
-# ---------------------------------------------------------
-- name: Get latest Nerd Fonts release metadata
-  ansible.builtin.uri:
-    url: "https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest"
-    return_content: yes
-  register: nerd_fonts_latest
-  tags: [fonts]
-
-- name: Set Font paths and URLs
+- name: Set Font paths
   ansible.builtin.set_fact:
-    firacode_url: "{{ nerd_fonts_latest.json.assets | selectattr('name', 'equalto', 'FiraCode.zip') | map(attribute='browser_download_url') | first }}"
     font_dir: "{{ (ansible_os_family == 'Darwin') | ternary(lookup('env', 'HOME') + '/Library/Fonts', lookup('env', 'HOME') + '/.local/share/fonts') }}"
     check_file: "{{ (ansible_os_family == 'Darwin') | ternary('FiraCodeNerdFont-Retina.ttf', 'FiraCodeNerdFont-Regular.ttf') }}"
   tags: [fonts]
 
+- name: Check if Fira Code Nerd Font is already installed
+  ansible.builtin.stat:
+    path: "{{ font_dir }}/{{ check_file }}"
+  register: font_installed
+  tags: [fonts]
+
 # ---------------------------------------------------------
-# 2. Prepare Font Directories
+# 1. Prepare Font Directories
 # ---------------------------------------------------------
 - name: Ensure Font directory exists
   ansible.builtin.file:
     path: "{{ font_dir }}"
     state: directory
     mode: '0755'
+  tags: [fonts]
+
+# ---------------------------------------------------------
+# 2. Fetch Latest Release Metadata from GitHub API
+# ---------------------------------------------------------
+- name: Get latest Nerd Fonts release metadata
+  ansible.builtin.uri:
+    url: "https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest"
+    return_content: yes
+  register: nerd_fonts_latest
+  when: not font_installed.stat.exists
+  tags: [fonts]
+
+- name: Set Fira Code download URL
+  ansible.builtin.set_fact:
+    firacode_url: "{{ nerd_fonts_latest.json.assets | selectattr('name', 'equalto', 'FiraCode.zip') | map(attribute='browser_download_url') | first }}"
+  when: not font_installed.stat.exists
   tags: [fonts]
 
 # ---------------------------------------------------------
@@ -35,7 +47,7 @@
     dest: "{{ font_dir }}"
     remote_src: yes
     exclude: ["*.otf", "*.md", "*.txt", "LICENSE"]
-    creates: "{{ font_dir }}/{{ check_file }}"
+  when: not font_installed.stat.exists
   tags: [fonts]
 
 # ---------------------------------------------------------
@@ -46,10 +58,3 @@
   when: ansible_os_family == 'Debian'
   changed_when: false
   tags: [fonts, ubuntu]
-
-- name: Verify Font Installation (macOS)
-  ansible.builtin.command: "ls {{ font_dir }}/FiraCodeNerdFont-Retina.ttf"
-  register: font_check_mac
-  failed_when: false
-  when: ansible_os_family == 'Darwin'
-  tags: [fonts, macos]

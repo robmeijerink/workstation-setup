@@ -2,7 +2,7 @@
 # ---------------------------------------------------------
 # 1. Install Fast Node Manager (fnm) - Cross-Platform
 # ---------------------------------------------------------
-# We intentionally use the installation script for both Ubuntu and macOS
+# We intentionally use the installation script for both Fedora and macOS
 # to guarantee the exact same binary path (~/.local/share/fnm/fnm)
 # which is heavily relied upon by Neovim and DAP configurations.
 

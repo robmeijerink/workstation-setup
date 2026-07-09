@@ -10,7 +10,7 @@
   community.general.homebrew:
     name: asdf
     state: present
-    path: "{{ '/home/linuxbrew/.linuxbrew/bin' if ansible_os_family == 'Debian' else omit }}"
+    path: "{{ '/home/linuxbrew/.linuxbrew/bin' if ansible_os_family == 'RedHat' else omit }}"
   tags: [install, dev, runtimes]
 
 - name: Ensure asdf plugins are present for parity
@@ -20,7 +20,7 @@
         asdf plugin add $plugin 2>/dev/null || true
       done
   environment:
-    PATH: "{{ ('/home/linuxbrew/.linuxbrew/bin:' if ansible_os_family == 'Debian' else '') + ansible_env.PATH }}"
+    PATH: "{{ ('/home/linuxbrew/.linuxbrew/bin:' if ansible_os_family == 'RedHat' else '') + ansible_env.PATH }}"
   changed_when: false
   tags: [install, dev, runtimes]
 
@@ -34,26 +34,26 @@
         asdf set -u "$plugin" latest 2>/dev/null || asdf global "$plugin" latest 2>/dev/null || true
       done
   environment:
-    PATH: "{{ ('/home/linuxbrew/.linuxbrew/bin:' if ansible_os_family == 'Debian' else '') + ansible_env.PATH }}"
+    PATH: "{{ ('/home/linuxbrew/.linuxbrew/bin:' if ansible_os_family == 'RedHat' else '') + ansible_env.PATH }}"
   changed_when: false
   tags: [install, dev, runtimes]
 
-# 2. Ubuntu Specific: System Libraries (Required for asdf runtimes)
+# 2. Fedora Specific: System Libraries (Required for asdf runtimes)
 # ---------------------------------------------------------
-- name: Install build dependencies for asdf runtimes (Ubuntu)
-  ansible.builtin.apt:
+- name: Install build dependencies for asdf runtimes (Fedora)
+  ansible.builtin.dnf:
     name:
-      - libxml2-dev
-      - libcurl4-openssl-dev
-      - libonig-dev
-      - libsqlite3-dev
-      - libzip-dev
-      - pkg-config
+      - libxml2-devel
+      - libcurl-devel
+      - oniguruma-devel
+      - sqlite-devel
+      - libzip-devel
+      - pkgconf-pkg-config
       - unzip
     state: present
   become: true
-  when: ansible_os_family == 'Debian'
-  tags: [install, dev, ubuntu]
+  when: ansible_os_family == 'RedHat'
+  tags: [install, dev, fedora]
 
 # 3. Rust Toolchain (Cross-platform)
 # ---------------------------------------------------------

@@ -1,6 +1,6 @@
 ---
 # =========================================================
-# GPG & Agent Configuration - Multi-OS (macOS & Ubuntu)
+# GPG & Agent Configuration - Multi-OS (macOS & Fedora)
 # =========================================================
 
 - name: Ensure ~/.gnupg exists with strict permissions

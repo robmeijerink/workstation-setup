@@ -1,17 +1,16 @@
 ---
 # =========================================================
-# Ubuntu Server Base Playbook
+# Fedora Sway Base Playbook
 # ========================================================
 # ---------------------------------------------------------
-# 1. Install Base System Requirements via APT
+# 1. Install Base System Requirements via DNF
 # ---------------------------------------------------------
-- name: Install core system requirements for Ubuntu
-  ansible.builtin.apt:
+- name: Install core system requirements for Fedora
+  ansible.builtin.dnf:
     name:
-      - build-essential
+      - "@development-tools"
       - openssh-server
-      - procps
-      - curl
+      - procps-ng
       - file
       - git
       - ca-certificates
@@ -19,18 +18,18 @@
       - htop
       - wl-clipboard
       - gnupg2
-      - gnupg-agent
-      - pinentry-curses
-      - dbus-user-session
+      - pinentry
       - gnome-keyring
-      - libsecret-1-0
+      - libsecret
+      - dnf-plugins-core
       - unzip
       - zip
-      - 7zip
+      - p7zip
+      - p7zip-plugins
     state: present
     update_cache: yes
   become: true
-  tags: [install, base, ubuntu]
+  tags: [install, base, fedora]
 
 # ---------------------------------------------------------
 # 2. Bootstrap Homebrew on Linux
@@ -59,10 +58,21 @@
     state: present
     reload: yes
   become: true
-  tags: [config, performance, ubuntu]
+  tags: [config, performance, fedora]
 
 # ---------------------------------------------------------
-# 4. SECURITY: SSH Hardening
+# 4. Ensure sshd is enabled and running
+# ---------------------------------------------------------
+- name: Enable and start sshd
+  ansible.builtin.service:
+    name: sshd
+    state: started
+    enabled: true
+  become: true
+  tags: [config, security, ssh]
+
+# ---------------------------------------------------------
+# 5. SECURITY: SSH Hardening
 # ---------------------------------------------------------
 - name: Disable SSH Password Authentication
   ansible.builtin.lineinfile:
@@ -85,37 +95,42 @@
   tags: [config, security, ssh]
 
 # ---------------------------------------------------------
-# 5. SECURITY: Unattended Upgrades
+# 6. SECURITY: Automatic Security Updates (dnf-automatic)
 # ---------------------------------------------------------
-- name: Install unattended-upgrades package
-  ansible.builtin.apt:
-    name: unattended-upgrades
+- name: Install dnf-automatic package
+  ansible.builtin.dnf:
+    name: dnf-automatic
     state: present
   become: true
   tags: [config, security, updates]
 
-- name: Configure Unattended Upgrades (Security Only, No Auto-Reboot)
+- name: Configure dnf-automatic (Security Only, No Auto-Reboot)
   ansible.builtin.copy:
-    dest: /etc/apt/apt.conf.d/99-rob-custom-upgrades
+    dest: /etc/dnf/automatic.conf
     content: |
-      // 1. Enable automatic daily updates
-      APT::Periodic::Update-Package-Lists "1";
-      APT::Periodic::Unattended-Upgrade "1";
+      [commands]
+      upgrade_type = security
+      random_sleep = 0
+      network_online_timeout = 60
+      download_updates = yes
+      apply_updates = yes
+      reboot = never
 
-      // 2. STRICTLY limit to Security Updates only
-      Unattended-Upgrade::Allowed-Origins {
-          "${distro_id}:${distro_codename}-security";
-          "${distro_id}ESMApps:${distro_codename}-apps-security";
-          "${distro_id}ESM:${distro_codename}-infra-security";
-      };
+      [emitters]
+      emit_via = stdio
 
-      // 3. Workflow Protection: Never reboot automatically
-      Unattended-Upgrade::Automatic-Reboot "false";
-
-      // 4. Maintenance: Auto-remove obsolete dependencies
-      Unattended-Upgrade::Remove-Unused-Dependencies "true";
+      [base]
+      debuglevel = 1
     mode: "0644"
     owner: root
     group: root
+  become: true
+  tags: [config, security, updates]
+
+- name: Enable and start dnf-automatic timer
+  ansible.builtin.service:
+    name: dnf-automatic.timer
+    state: started
+    enabled: true
   become: true
   tags: [config, security, updates]

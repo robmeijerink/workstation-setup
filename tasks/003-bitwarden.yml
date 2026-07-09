@@ -21,25 +21,26 @@
   tags: [bitwarden, install, macos]
 
 # ---------------------------------------------------------
-# 2. Ubuntu Installation (Desktop DEB & Native CLI)
+# 2. Fedora Installation (Desktop RPM & Native CLI)
 # ---------------------------------------------------------
-- name: Install Bitwarden Desktop via DEB (Ubuntu)
+- name: Install Bitwarden Desktop via RPM (Fedora)
   block:
-    - name: Download Bitwarden Desktop DEB package
+    - name: Download Bitwarden Desktop RPM package
       ansible.builtin.get_url:
-        url: "https://vault.bitwarden.com/download/?app=desktop&platform=linux&variant=deb"
-        dest: "/tmp/bitwarden.deb"
+        url: "https://vault.bitwarden.com/download/?app=desktop&platform=linux&variant=rpm"
+        dest: "/tmp/bitwarden.rpm"
         mode: "0644"
 
     - name: Install Bitwarden Desktop
-      ansible.builtin.apt:
-        deb: "/tmp/bitwarden.deb"
+      ansible.builtin.dnf:
+        name: "/tmp/bitwarden.rpm"
         state: present
+        disable_gpg_check: yes
   become: true
-  when: ansible_os_family == 'Debian'
-  tags: [bitwarden, install, ubuntu]
+  when: ansible_os_family == 'RedHat'
+  tags: [bitwarden, install, fedora]
 
-- name: Install Bitwarden CLI Native Binary (Ubuntu)
+- name: Install Bitwarden CLI Native Binary (Fedora)
   ansible.builtin.unarchive:
     src: "https://vault.bitwarden.com/download/?app=cli&platform=linux&variant=zip"
     dest: "/usr/local/bin"
@@ -47,8 +48,8 @@
     mode: "0755"
     creates: "/usr/local/bin/bw"
   become: true
-  when: ansible_os_family == 'Debian'
-  tags: [bitwarden, install, ubuntu]
+  when: ansible_os_family == 'RedHat'
+  tags: [bitwarden, install, fedora]
 
 # ---------------------------------------------------------
 # 3. Security: Session Validation

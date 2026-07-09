@@ -9,13 +9,10 @@ TMP_DIR="/tmp/my-ansible-worksetup"
 
 # --- 1. Bootstrap Ansible & Dependencies ---
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    # Ubuntu / Debian logic (O(1) execution check)
+    # Fedora logic (O(1) execution check)
     if ! command -v ansible &> /dev/null; then
-        echo "Installing Ansible via APT..."
-        sudo apt-get update
-        sudo apt-get install -y software-properties-common curl git build-essential procps file
-        sudo apt-add-repository --yes --update ppa:ansible/ansible
-        sudo apt-get install -y ansible
+        echo "Installing Ansible via DNF..."
+        sudo dnf install -y ansible git curl procps-ng file
     fi
 
 elif [[ "$OSTYPE" == "darwin"* ]]; then

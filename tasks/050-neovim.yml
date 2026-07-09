@@ -10,39 +10,28 @@
   tags: [install, neovim, macos]
 
 # ---------------------------------------------------------
-# 2. Install Neovim (Ubuntu) - GitHub Stable AppImage
+# 2. Install Neovim (Fedora)
 # ---------------------------------------------------------
-- block:
-    - name: Ensure FUSE dependency is installed
-      ansible.builtin.apt:
-        name: libfuse2t64
-        state: present
-
-    - name: Download Neovim AppImage
-      ansible.builtin.get_url:
-        url: "https://github.com/neovim/neovim/releases/download/stable/nvim-linux-x86_64.appimage"
-        dest: "/usr/local/bin/nvim"
-        mode: '0755'
-        # Won't re-download once the file exists at dest
-        owner: root
-        group: root
+- name: Install Neovim via DNF
+  ansible.builtin.dnf:
+    name: neovim
+    state: present
   become: true
-  when: ansible_os_family == 'Debian'
-  tags: [install, neovim, ubuntu]
+  when: ansible_os_family == 'RedHat'
+  tags: [install, neovim, fedora]
 
 # ---------------------------------------------------------
 # 3. Mason System Dependencies (The "Toolbox")
 # ---------------------------------------------------------
 - name: Ensure Mason can extract and install binaries
-  ansible.builtin.apt:
+  ansible.builtin.dnf:
     name:
       - unzip
       - wget
-      - curl
       - gzip
       - tar
-      - build-essential # Required for compiling some tree-sitter parsers or Go tools
+      - "@development-tools" # Required for compiling some tree-sitter parsers or Go tools
     state: present
   become: true
-  when: ansible_os_family == 'Debian'
+  when: ansible_os_family == 'RedHat'
   tags: [install, neovim, mason]

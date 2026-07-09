@@ -4,35 +4,39 @@
 # =========================================================
 
 # ---------------------------------------------------------
-# Ubuntu (Wayland) Logic
+# Fedora (Wayland) Logic
 # ---------------------------------------------------------
-- name: Install Browsers on Ubuntu
+- name: Install Browsers on Fedora
   block:
-    - name: Ensure Firefox is installed (Native APT)
-      ansible.builtin.apt:
+    - name: Ensure Firefox is installed (Native DNF)
+      ansible.builtin.dnf:
         name: firefox
         state: present
       become: true
 
     - name: Add Brave Browser GPG Key
-      ansible.builtin.apt_key:
-        url: https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+      ansible.builtin.rpm_key:
+        key: https://brave-browser-rpm-release.s3.brave.com/brave-core.asc
         state: present
       become: true
 
     - name: Add Brave Browser Repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main"
-        state: present
+      ansible.builtin.yum_repository:
+        name: brave-browser
+        description: Brave Browser
+        baseurl: https://brave-browser-rpm-release.s3.brave.com/x86_64/
+        enabled: yes
+        gpgcheck: yes
+        gpgkey: https://brave-browser-rpm-release.s3.brave.com/brave-core.asc
       become: true
 
     - name: Install Brave Browser (Chromium Engine)
-      ansible.builtin.apt:
+      ansible.builtin.dnf:
         name: brave-browser
         update_cache: yes
         state: present
       become: true
-  when: ansible_os_family == 'Debian'
+  when: ansible_os_family == 'RedHat'
 
 # ---------------------------------------------------------
 # macOS Logic

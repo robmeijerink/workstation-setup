@@ -1,18 +1,19 @@
 ---
 # =========================================================
-# Optional: Opt-in Office Suite (macOS & Ubuntu)
+# Optional: Opt-in Office Suite (macOS & Fedora)
 # Usage: ansible-playbook office.yml --tags office
 # =========================================================
 
 # ---------------------------------------------------------
-# Ubuntu Server (Sway/Wayland) Execution
+# Fedora (Sway/Wayland) Execution
 # ---------------------------------------------------------
-- name: Install FreeOffice via DEB package (Ubuntu)
-  ansible.builtin.apt:
-    deb: "https://www.softmaker.net/down/softmaker-freeoffice-2024_amd64.deb"
+- name: Install FreeOffice via RPM package (Fedora)
+  ansible.builtin.dnf:
+    name: "https://www.softmaker.net/down/softmaker-freeoffice-2024_x86_64.rpm"
     state: present
+    disable_gpg_check: yes
   become: true
-  when: ansible_os_family == 'Debian'
+  when: ansible_os_family == 'RedHat'
   tags:
     - never
     - office

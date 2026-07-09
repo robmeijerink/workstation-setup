@@ -30,7 +30,7 @@
       - go-task
     state: present
     update_homebrew: yes
-    path: "{{ '/home/linuxbrew/.linuxbrew/bin' if ansible_os_family == 'Debian' else omit }}"
+    path: "{{ '/home/linuxbrew/.linuxbrew/bin' if ansible_os_family == 'RedHat' else omit }}"
   tags: [install, cli, tools]
 
 - name: Install macOS specific Homebrew packages
@@ -48,6 +48,6 @@
       - sad
     state: present
     path: /home/linuxbrew/.linuxbrew/bin
-  when: ansible_os_family == 'Debian'
-  tags: [install, cli, tools, ubuntu]
+  when: ansible_os_family == 'RedHat'
+  tags: [install, cli, tools, fedora]
 

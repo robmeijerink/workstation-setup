@@ -53,8 +53,8 @@
 # ---------------------------------------------------------
 # 4. OS-Specific Font Finalization
 # ---------------------------------------------------------
-- name: Update font cache (Ubuntu)
+- name: Update font cache (Fedora)
   ansible.builtin.command: fc-cache -fv
-  when: ansible_os_family == 'Debian'
+  when: ansible_os_family == 'RedHat'
   changed_when: false
-  tags: [fonts, ubuntu]
+  tags: [fonts, fedora]

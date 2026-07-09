@@ -3,36 +3,40 @@
 # Database Client Infrastructure
 # =========================================================
 
-- name: Install Database Utilities on Ubuntu
+- name: Install Database Utilities on Fedora
   block:
     - name: Install Native CLI Clients
-      ansible.builtin.apt:
+      ansible.builtin.dnf:
         name:
-          - postgresql-client
-          - mariadb-client
-          - sqlite3
+          - postgresql
+          - mariadb
+          - sqlite
         state: present
         update_cache: yes
       become: true
 
     - name: Add TablePlus GPG Key
-      ansible.builtin.apt_key:
-        url: https://deb.tableplus.com/apt.tableplus.com.gpg.key
+      ansible.builtin.rpm_key:
+        key: https://yum.tableplus.com/apt.tableplus.com.gpg.key
         state: present
       become: true
 
     - name: Add TablePlus Repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64] https://deb.tableplus.com/debian/24 tableplus main"
-        state: present
+      ansible.builtin.yum_repository:
+        name: tableplus
+        description: TablePlus
+        baseurl: https://yum.tableplus.com/rpm/x86_64
+        enabled: yes
+        gpgcheck: yes
+        gpgkey: https://yum.tableplus.com/apt.tableplus.com.gpg.key
       become: true
 
     - name: Install TablePlus (Linux Native)
-      ansible.builtin.apt:
+      ansible.builtin.dnf:
         name: tableplus
         state: present
       become: true
-  when: ansible_os_family == 'Debian'
+  when: ansible_os_family == 'RedHat'
 
 - name: Install Database Utilities on macOS
   block:

@@ -1,65 +1,51 @@
 ---
 # =========================================================
-# UBUNTU / LINUX (UFW)
+# FEDORA / LINUX (firewalld)
 # =========================================================
-- name: Ubuntu | Ensure UFW is installed
-  ansible.builtin.apt:
-    name: ufw
+- name: Fedora | Ensure firewalld is installed
+  ansible.builtin.dnf:
+    name: firewalld
     state: present
     update_cache: yes
   become: true
-  when: ansible_os_family == "Debian"
+  when: ansible_os_family == "RedHat"
 
-- name: Ubuntu | Reset UFW to factory defaults
-  community.general.ufw:
-    state: reset
+- name: Fedora | Enable and start firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: started
+    enabled: true
   become: true
-  when: ansible_os_family == "Debian"
+  when: ansible_os_family == "RedHat"
 
-- name: Ubuntu | Set default incoming policy to DENY
-  community.general.ufw:
-    direction: incoming
-    policy: deny
+- name: Fedora | Set default zone to drop incoming by default
+  ansible.builtin.command: firewall-cmd --set-default-zone=FedoraWorkstation
+  register: firewalld_zone
+  changed_when: "'ZONE_ALREADY_SET' not in firewalld_zone.stderr and firewalld_zone.rc == 0"
+  failed_when: firewalld_zone.rc != 0 and 'ZONE_ALREADY_SET' not in firewalld_zone.stderr
   become: true
-  when: ansible_os_family == "Debian"
+  when: ansible_os_family == "RedHat"
 
-- name: Ubuntu | Set default outgoing policy to ALLOW
-  community.general.ufw:
-    direction: outgoing
-    policy: allow
-  become: true
-  when: ansible_os_family == "Debian"
-
-- name: Ubuntu | Allow SSH with rate limiting
-  community.general.ufw:
-    rule: limit
-    port: ssh
-    proto: tcp
-  become: true
-  when: ansible_os_family == "Debian"
-
-- name: Ubuntu | Allow standard web traffic
-  community.general.ufw:
-    rule: allow
-    port: "{{ item }}"
-    proto: tcp
-  loop:
-    - 80
-    - 443
-  become: true
-  when: ansible_os_family == "Debian"
-
-- name: Ubuntu | Enable UFW logging
-  community.general.ufw:
-    logging: "on"
-  become: true
-  when: ansible_os_family == "Debian"
-
-- name: Ubuntu | Enable UFW and commit changes
-  community.general.ufw:
+- name: Fedora | Allow SSH service
+  ansible.posix.firewalld:
+    service: ssh
+    permanent: true
+    immediate: true
     state: enabled
   become: true
-  when: ansible_os_family == "Debian"
+  when: ansible_os_family == "RedHat"
+
+- name: Fedora | Allow standard web traffic
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop:
+    - http
+    - https
+  become: true
+  when: ansible_os_family == "RedHat"
 
 # =========================================================
 # MACOS (ALF)

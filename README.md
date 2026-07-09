@@ -22,11 +22,8 @@ Tasks are ordered and tagged so they can be run selectively (e.g. `ansible-playb
 - **Terminal & shell** — Alacritty, Zsh + Zap, tmux + TPM, Nerd Fonts.
 - **Dev tooling** — Docker, database clients, a curated set of CLI tools, and Neovim with LSP/Mason.
 - **Desktop** — browsers and office suite. On Fedora the Sway compositor, bars and daemons ship with the Sway spin, so they are not managed here.
-- **Backup** — Timeshift in Btrfs snapshot mode (Fedora).
+- **Backup** — Snapper Btrfs snapshots with `btrfs-assistant` and automatic pre/post snapshots on every `dnf` transaction (Fedora).
 - **Dotfiles** — cloned and stowed from my [dotfiles](https://github.com/robmeijerink/dotfiles) repository.
-
-> [!NOTE]
-> Timeshift's Btrfs mode expects the `@` / `@home` subvolume layout. Fedora's installer names its subvolumes `root` and `home` by default, so verify (or adjust) your subvolume layout before relying on Btrfs snapshots.
 
 > [!WARNING]
 > **Warning / Disclaimer**

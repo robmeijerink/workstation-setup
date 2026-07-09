@@ -1,0 +1,43 @@
+---
+# =========================================================
+# System Backup Infrastructure - Snapper (Btrfs)
+# =========================================================
+- name: Install Snapper Btrfs Assistant and dnf snapshot plugin
+  ansible.builtin.dnf:
+    name:
+      - snapper
+      - btrfs-assistant
+      - python3-dnf-plugin-snapper
+    state: present
+  become: true
+  tags: [system, backup]
+
+- name: Check for existing Snapper configurations
+  ansible.builtin.stat:
+    path: "/etc/snapper/configs/{{ item.name }}"
+  loop:
+    - { name: root, path: / }
+    - { name: home, path: /home }
+  register: snapper_configs
+  tags: [system, backup]
+
+- name: Create Snapper configuration for root and home subvolumes
+  ansible.builtin.command: "snapper -c {{ item.item.name }} create-config {{ item.item.path }}"
+  loop: "{{ snapper_configs.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when: not item.stat.exists
+  changed_when: true
+  become: true
+  tags: [system, backup]
+
+- name: Enable and start Snapper timeline and cleanup timers
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - snapper-timeline.timer
+    - snapper-cleanup.timer
+  become: true
+  tags: [system, backup]

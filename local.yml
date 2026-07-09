@@ -77,10 +77,10 @@
       ansible.builtin.import_tasks: tasks/050-neovim.yml
       tags: [install, neovim]
 
-    - name: 080 Installs timeshift and defines backup strategy
-      ansible.builtin.import_tasks: tasks/080-timeshift.yml
+    - name: 080 Installs snapper and defines backup strategy
+      ansible.builtin.import_tasks: tasks/080-snapper.yml
       when: ansible_os_family == 'RedHat'
-      tags: [install, timeshift, backup]
+      tags: [install, snapper, backup]
 
     - name: 085 Install Office Suite
       ansible.builtin.import_tasks: tasks/085-office.yml

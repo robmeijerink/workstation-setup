@@ -7,16 +7,29 @@
     homebrew_bin: "{{ '/opt/homebrew/bin/brew' if ansible_architecture == 'arm64' else '/usr/local/bin/brew' }}"
   tags: [install, macos, aerospace]
 
+- name: Tap the AeroSpace Homebrew repository
+  community.general.homebrew_tap:
+    name: nikitabobko/tap
+    state: present
+  tags: [install, macos, aerospace]
+
+- name: Trust the AeroSpace tap for non-interactive cask installs
+  ansible.builtin.command:
+    cmd: "{{ homebrew_bin }} trust --tap nikitabobko/tap"
+  changed_when: false
+  failed_when: false
+  tags: [install, macos, aerospace]
+
 - name: Ensure AeroSpace is installed via Homebrew Cask
   community.general.homebrew_cask:
-    name: aerospace
+    name: nikitabobko/tap/aerospace
     state: present
     update_homebrew: true
   tags: [install, macos, aerospace]
 
 - name: Verify AeroSpace installation
   ansible.builtin.command:
-    cmd: "aerospace --version"
+    cmd: "{{ homebrew_bin | dirname }}/aerospace --version"
   register: aerospace_version
   changed_when: false
   tags: [install, macos, aerospace, validation]

@@ -37,8 +37,27 @@
   community.general.homebrew:
     name:
       - coreutils
-      - ms-jpq/sad/sad
     state: present
+  when: ansible_os_family == 'Darwin'
+  tags: [install, cli, tools, macos]
+
+- name: Install sad from its dedicated tap (macOS)
+  block:
+    - name: Tap the sad Homebrew repository
+      community.general.homebrew_tap:
+        name: ms-jpq/sad
+        state: present
+
+    - name: Trust the sad tap for non-interactive installs
+      ansible.builtin.command:
+        cmd: "{{ '/opt/homebrew/bin/brew' if ansible_architecture == 'arm64' else '/usr/local/bin/brew' }} trust --tap ms-jpq/sad"
+      changed_when: false
+      failed_when: false
+
+    - name: Install sad (Space Age seD)
+      community.general.homebrew:
+        name: ms-jpq/sad/sad
+        state: present
   when: ansible_os_family == 'Darwin'
   tags: [install, cli, tools, macos]
 

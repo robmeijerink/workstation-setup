@@ -69,6 +69,11 @@
       when: ansible_os_family == 'Darwin'
       tags: [install, desktop, aerospace]
 
+    - name: 031 Install Karabiner-Elements keyboard remapping
+      ansible.builtin.import_tasks: tasks/031-karabiner.yml
+      when: ansible_os_family == 'Darwin'
+      tags: [install, desktop, karabiner]
+
     - name: 045 Install Neovim Runtime Dependencies
       ansible.builtin.import_tasks: tasks/045-neovim-deps.yml
       tags: [install, neovim, deps]
@@ -101,6 +106,11 @@
     - name: 150 Dotfiles Clone and Stow via setup.sh
       ansible.builtin.import_tasks: tasks/150-dotfiles.yml
       tags: [config, dotfiles]
+
+    - name: 160 Karabiner-Elements Swap Number Row
+      ansible.builtin.import_tasks: tasks/160-karabiner.yml
+      when: ansible_os_family == 'Darwin'
+      tags: [config, macos, karabiner]
 
     - name: 055 Post-Install Neovim LSP and Mason
       ansible.builtin.import_tasks: tasks/055-neovim-lsp.yml

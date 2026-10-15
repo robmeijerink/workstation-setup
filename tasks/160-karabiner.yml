@@ -1,0 +1,71 @@
+---
+# ---------------------------------------------------------
+# Karabiner-Elements: Swap number row with symbol row (macOS)
+# ---------------------------------------------------------
+# Runs after 150-dotfiles, which stows the rule set into complex_modifications.
+- name: Define Karabiner paths
+  ansible.builtin.set_fact:
+    karabiner_dir: "{{ ansible_user_dir }}/.config/karabiner"
+    karabiner_asset: "{{ ansible_user_dir }}/.config/karabiner/assets/complex_modifications/swap_number_row.json"
+  tags: [config, macos, karabiner]
+
+- name: Validate swap number row rule set
+  ansible.builtin.command:
+    argv:
+      - /Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli
+      - --lint-complex-modifications
+      - "{{ karabiner_asset }}"
+  changed_when: false
+  tags: [config, macos, karabiner, validation]
+
+# ---------------------------------------------------------
+# Enable the rules in the selected profile (idempotent)
+# ---------------------------------------------------------
+- name: Check for existing karabiner.json
+  ansible.builtin.stat:
+    path: "{{ karabiner_dir }}/karabiner.json"
+  register: karabiner_config
+  tags: [config, macos, karabiner]
+
+# Fresh install: Karabiner has not written a config yet, start from a minimal one
+- name: Create minimal karabiner.json if missing
+  ansible.builtin.copy:
+    dest: "{{ karabiner_dir }}/karabiner.json"
+    content: '{"profiles": [{"name": "Default profile", "selected": true}]}'
+    mode: "0600"
+  when: not karabiner_config.stat.exists
+  tags: [config, macos, karabiner]
+
+- name: Count swap number row rules missing from the selected profile
+  ansible.builtin.command:
+    argv:
+      - jq
+      - --slurpfile
+      - asset
+      - "{{ karabiner_asset }}"
+      - >-
+        [.profiles[] | select(.selected) | .complex_modifications.rules // [] | .[].description] as $cur
+        | [$asset[0].rules[] | select(.description as $d | $cur | index($d) | not)] | length
+      - "{{ karabiner_dir }}/karabiner.json"
+  register: karabiner_missing
+  changed_when: false
+  tags: [config, macos, karabiner]
+
+- name: Add missing swap number row rules to the selected profile
+  ansible.builtin.shell:
+    cmd: >-
+      jq --indent 4 --slurpfile asset "{{ karabiner_asset }}"
+      '.profiles |= map(if .selected then
+      .complex_modifications.rules = ((.complex_modifications.rules // []) as $cur
+      | $cur + [$asset[0].rules[] | select(.description as $d | $cur | map(.description) | index($d) | not)])
+      else . end)'
+      karabiner.json > karabiner.json.tmp && mv karabiner.json.tmp karabiner.json && chmod 600 karabiner.json
+    chdir: "{{ karabiner_dir }}"
+  when: karabiner_missing.stdout | int > 0
+  tags: [config, macos, karabiner]
+
+- name: Remind about manual Karabiner permissions
+  ansible.builtin.debug:
+    msg: "Karabiner-Elements: on first install, open the app and approve the driver extension and Input Monitoring in System Settings."
+  when: not karabiner_config.stat.exists
+  tags: [config, macos, karabiner]

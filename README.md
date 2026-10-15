@@ -21,7 +21,7 @@ Tasks are ordered and tagged so they can be run selectively (e.g. `ansible-playb
 - **Security** — Bitwarden desktop + CLI, SSH agent integration, GPG agent.
 - **Terminal & shell** — Alacritty, Zsh + Zap, tmux + TPM, Nerd Fonts.
 - **Dev tooling** — Docker, database clients, a curated set of CLI tools, and Neovim with LSP/Mason.
-- **Desktop** — browsers and office suite. On Fedora the Sway compositor, bars and daemons ship with the Sway spin, so they are not managed here.
+- **Desktop** — browsers and office suite; on macOS AeroSpace tiling and Karabiner-Elements (number row swapped with its shifted symbols). On Fedora the Sway compositor, bars and daemons ship with the Sway spin, so they are not managed here.
 - **Backup** — Snapper Btrfs snapshots with `btrfs-assistant` and automatic pre/post snapshots on every `dnf` transaction (Fedora).
 - **Dotfiles** — cloned and stowed from my [dotfiles](https://github.com/robmeijerink/dotfiles) repository.
 

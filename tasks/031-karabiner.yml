@@ -1,0 +1,18 @@
+---
+# ---------------------------------------------------------
+# Karabiner-Elements Installation (macOS)
+# ---------------------------------------------------------
+- name: Ensure Karabiner-Elements is installed via Homebrew Cask
+  community.general.homebrew_cask:
+    name: karabiner-elements
+    state: present
+  tags: [install, macos, karabiner]
+
+# Must exist before 150-dotfiles stows the 'karabiner' package: otherwise stow folds
+# ~/.config/karabiner into a symlink and Karabiner writes karabiner.json into the repo.
+- name: Ensure Karabiner complex modifications directory exists
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/.config/karabiner/assets/complex_modifications"
+    state: directory
+    mode: "0755"
+  tags: [install, macos, karabiner]

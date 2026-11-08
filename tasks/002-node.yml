@@ -26,8 +26,8 @@
   ansible.builtin.shell:
     cmd: "{{ lookup('env', 'HOME') }}/.local/share/fnm/fnm install --lts"
   register: fnm_install
-  # O(1) idempotency: Only report 'changed' if a new download actually occurred
-  changed_when: "'Installing' in fnm_install.stdout or 'installed' in fnm_install.stdout | lower"
+  # Only report 'changed' if a new download actually occurred ("already installed" is a no-op)
+  changed_when: "'Installing' in (fnm_install.stdout ~ fnm_install.stderr)"
   tags: [install, node, fnm]
 
 - name: Set default Node.js version to lts-latest
@@ -41,7 +41,7 @@
 # 3. Global NPM Packages (Optional but recommended for Solvalutions)
 # ---------------------------------------------------------
 # Only add generic, project-agnostic tools here. Neovim's npm dependency
-# is explicitly handled in 010-neovim-deps.yml to keep domains isolated.
+# is explicitly handled in 045-neovim-deps.yml to keep domains isolated.
 - name: Install essential global NPM packages
   ansible.builtin.shell:
     cmd: "{{ lookup('env', 'HOME') }}/.local/share/fnm/fnm exec --using=lts-latest npm install -g {{ item }}"

@@ -129,14 +129,14 @@
       changed_when: false
       failed_when: false
       when: ansible_os_family == 'RedHat'
-      tags: [always]
+      tags: [reboot]
 
     - name: Prompt for reboot if system changes were made
       ansible.builtin.pause:
         prompt: "System requires a reboot to apply all changes (Docker groups/macOS settings). Reboot now? (y/N)"
       register: reboot_prompt
       when: (reboot_required_cmd.rc is defined and reboot_required_cmd.rc == 1) or (ansible_os_family == 'Darwin')
-      tags: [always]
+      tags: [reboot]
 
     - name: Rebooting machine
       ansible.builtin.shell: shutdown -r now
@@ -144,7 +144,7 @@
       when:
         - reboot_prompt.user_input is defined
         - reboot_prompt.user_input | lower == 'y'
-      tags: [always]
+      tags: [reboot]
 
   # =========================================================
   # HANDLERS (Must ALWAYS be at the end of the play)

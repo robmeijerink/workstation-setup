@@ -1,7 +1,7 @@
 ---
 # =========================================================
 # Optional: Opt-in Office Suite (macOS & Fedora)
-# Usage: ansible-playbook office.yml --tags office
+# Usage: ansible-playbook local.yml --tags office
 # =========================================================
 
 # ---------------------------------------------------------

@@ -21,12 +21,15 @@
   register: snapper_configs
   tags: [system, backup]
 
+# Only create a config when the path is its own btrfs mount (snapper needs a subvolume).
 - name: Create Snapper configuration for root and home subvolumes
   ansible.builtin.command: "snapper -c {{ item.item.name }} create-config {{ item.item.path }}"
   loop: "{{ snapper_configs.results }}"
   loop_control:
     label: "{{ item.item.name }}"
-  when: not item.stat.exists
+  when:
+    - not item.stat.exists
+    - ansible_mounts | selectattr('mount', 'equalto', item.item.path) | selectattr('fstype', 'equalto', 'btrfs') | list | length > 0
   changed_when: true
   become: true
   tags: [system, backup]

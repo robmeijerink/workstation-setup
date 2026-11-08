@@ -18,7 +18,7 @@
   become: true
   when: ansible_os_family == "RedHat"
 
-- name: Fedora | Set default zone to drop incoming by default
+- name: Fedora | Set default zone to FedoraWorkstation
   ansible.builtin.command: firewall-cmd --set-default-zone=FedoraWorkstation
   register: firewalld_zone
   changed_when: "'ZONE_ALREADY_SET' not in firewalld_zone.stderr and firewalld_zone.rc == 0"

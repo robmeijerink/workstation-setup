@@ -5,7 +5,7 @@
 set -e
 
 REPO_URL="https://github.com/robmeijerink/workstation-setup.git"
-TMP_DIR="/tmp/my-ansible-worksetup"
+TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/my-ansible-worksetup.XXXXXX")"
 
 # --- 1. Bootstrap Ansible & Dependencies ---
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
@@ -36,7 +36,6 @@ ansible-galaxy collection install community.general ansible.posix
 
 # --- 3. Repository Preparation ---
 echo "Cloning setup repository..."
-rm -rf "$TMP_DIR"
 git clone "$REPO_URL" "$TMP_DIR"
 
 # --- 4. Execute Playbook ---

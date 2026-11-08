@@ -4,7 +4,40 @@
 # Focus: Version Management (asdf)
 # =========================================================
 
-# 1. Unified Version Management (asdf)
+# 1. Fedora Specific: System Libraries (Required for asdf runtimes)
+# ---------------------------------------------------------
+# Must run BEFORE the asdf installs below, otherwise the php/python compiles fail.
+- name: Install build dependencies for asdf runtimes (Fedora)
+  ansible.builtin.dnf:
+    name:
+      - autoconf
+      - automake
+      - bison
+      - re2c
+      - bzip2-devel
+      - libffi-devel
+      - libicu-devel
+      - libjpeg-turbo-devel
+      - libpng-devel
+      - libsodium-devel
+      - libxslt-devel
+      - gmp-devel
+      - openssl-devel
+      - readline-devel
+      - xz-devel
+      - libxml2-devel
+      - libcurl-devel
+      - oniguruma-devel
+      - sqlite-devel
+      - libzip-devel
+      - pkgconf-pkg-config
+      - unzip
+    state: present
+  become: true
+  when: ansible_os_family == 'RedHat'
+  tags: [install, dev, fedora, runtimes]
+
+# 2. Unified Version Management (asdf)
 # ---------------------------------------------------------
 - name: Install asdf version manager
   community.general.homebrew:
@@ -26,34 +59,27 @@
 
 - name: Install and pin latest runtime versions via asdf
   ansible.builtin.shell:
-    # Fully error-tolerant: a failed compile (e.g. php) never halts provisioning.
+    # A failed compile (e.g. php) never halts provisioning, but is reported below.
     # Supports both asdf 0.16+ ('set') and legacy ('global') syntax.
     cmd: |
       for plugin in golang php python kubectl; do
-        asdf install "$plugin" latest 2>/dev/null || true
-        asdf set -u "$plugin" latest 2>/dev/null || asdf global "$plugin" latest 2>/dev/null || true
+        if ! asdf install "$plugin" latest >/dev/null 2>&1; then
+          echo "FAILED: asdf install $plugin latest"
+          continue
+        fi
+        asdf set -u "$plugin" latest 2>/dev/null || asdf global "$plugin" latest 2>/dev/null || echo "FAILED: pin $plugin"
       done
   environment:
     PATH: "{{ ('/home/linuxbrew/.linuxbrew/bin:' if ansible_os_family == 'RedHat' else '') + ansible_env.PATH }}"
+  register: asdf_install
   changed_when: false
   tags: [install, dev, runtimes]
 
-# 2. Fedora Specific: System Libraries (Required for asdf runtimes)
-# ---------------------------------------------------------
-- name: Install build dependencies for asdf runtimes (Fedora)
-  ansible.builtin.dnf:
-    name:
-      - libxml2-devel
-      - libcurl-devel
-      - oniguruma-devel
-      - sqlite-devel
-      - libzip-devel
-      - pkgconf-pkg-config
-      - unzip
-    state: present
-  become: true
-  when: ansible_os_family == 'RedHat'
-  tags: [install, dev, fedora]
+- name: Report failed asdf runtime installs
+  ansible.builtin.debug:
+    msg: "{{ asdf_install.stdout_lines | select('match', '^FAILED') | list }}"
+  when: asdf_install.stdout is search('FAILED')
+  tags: [install, dev, runtimes]
 
 # 3. Rust Toolchain (Cross-platform)
 # ---------------------------------------------------------
@@ -88,7 +114,7 @@
     repo: "https://github.com/xdebug/vscode-php-debug.git"
     dest: "{{ lookup('env', 'HOME') }}/build/vscode-php-debug"
     depth: 1
-    version: master
+    version: main
   register: xdebug_clone
   tags: [php, debugger]
 

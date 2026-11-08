@@ -2,20 +2,83 @@
 # ---------------------------------------------------------
 # 1. Install Alacritty (macOS)
 # ---------------------------------------------------------
-- name: Install Alacritty via Homebrew Cask
-  community.general.homebrew_cask:
-    name: alacritty
-    state: present
+# The Homebrew cask is disabled (fails Gatekeeper, since 2026-09-01), so we install the
+# latest release DMG from GitHub ourselves and only (re)install when the version differs.
+- block:
+    - name: Read installed Alacritty version
+      ansible.builtin.command: defaults read /Applications/Alacritty.app/Contents/Info CFBundleShortVersionString
+      register: alacritty_installed
+      check_mode: false
+      changed_when: false
+      failed_when: false
+
+    - name: Get latest Alacritty release metadata
+      ansible.builtin.uri:
+        url: "https://api.github.com/repos/alacritty/alacritty/releases/latest"
+        return_content: true
+      register: alacritty_latest
+      check_mode: false
+
+    - name: Set Alacritty target version and DMG URL
+      ansible.builtin.set_fact:
+        alacritty_version: "{{ alacritty_latest.json.tag_name | regex_replace('^v', '') }}"
+        alacritty_dmg_url: "{{ alacritty_latest.json.assets | selectattr('name', 'match', '^Alacritty-.*\\.dmg$') | map(attribute='browser_download_url') | first }}"
+
+    - name: Install or update Alacritty from DMG
+      when: alacritty_installed.rc != 0 or alacritty_installed.stdout | trim != alacritty_version
+      block:
+        - name: Download Alacritty DMG
+          ansible.builtin.get_url:
+            url: "{{ alacritty_dmg_url }}"
+            dest: "/tmp/Alacritty-{{ alacritty_version }}.dmg"
+            mode: "0644"
+
+        - name: Mount Alacritty DMG
+          ansible.builtin.command: hdiutil attach -nobrowse -readonly -mountpoint /tmp/alacritty-dmg "/tmp/Alacritty-{{ alacritty_version }}.dmg"
+          changed_when: true
+
+        - name: Copy Alacritty.app to /Applications
+          ansible.builtin.command: ditto /tmp/alacritty-dmg/Alacritty.app /Applications/Alacritty.app
+          changed_when: true
+
+        - name: Remove quarantine attribute (app is not notarized)
+          ansible.builtin.command: xattr -dr com.apple.quarantine /Applications/Alacritty.app
+          changed_when: false
+          failed_when: false
+      always:
+        - name: Unmount Alacritty DMG
+          ansible.builtin.command: hdiutil detach /tmp/alacritty-dmg
+          changed_when: false
+          failed_when: false
+
+        - name: Remove downloaded DMG
+          ansible.builtin.file:
+            path: "/tmp/Alacritty-{{ alacritty_version }}.dmg"
+            state: absent
+
+    # TERM=alacritty needs the terminfo entries (the cask used to symlink these)
+    - name: Ensure ~/.terminfo/61 exists
+      ansible.builtin.file:
+        path: "{{ ansible_user_dir }}/.terminfo/61"
+        state: directory
+        mode: "0755"
+
+    - name: Link Alacritty terminfo entries
+      ansible.builtin.file:
+        src: "/Applications/Alacritty.app/Contents/Resources/61/{{ item }}"
+        dest: "{{ ansible_user_dir }}/.terminfo/61/{{ item }}"
+        state: link
+      loop: [alacritty, alacritty-direct]
   when: ansible_os_family == 'Darwin'
   tags: [alacritty, install, macos]
 
 # ---------------------------------------------------------
 # 2. Install Alacritty (Fedora)
 # ---------------------------------------------------------
-- name: Install Alacritty via DNF
+- name: Install latest Alacritty via DNF
   ansible.builtin.dnf:
     name: alacritty
-    state: present
+    state: latest
   become: true
   when: ansible_os_family == 'RedHat'
   tags: [alacritty, install, fedora]

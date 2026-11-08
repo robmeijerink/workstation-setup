@@ -30,13 +30,16 @@
 # ---------------------------------------------------------
 # 3. Configure ~/.ssh/config for Zero-Disk Policy
 # ---------------------------------------------------------
+# blockinfile keeps any existing Host entries in ~/.ssh/config intact.
+# Note: ssh uses the first value found, so this block sits at the top of the file.
 - name: Apply SSH config for Bitwarden Agent integration
-  ansible.builtin.copy:
-    dest: "{{ lookup('env', 'HOME') }}/.ssh/config"
+  ansible.builtin.blockinfile:
+    path: "{{ lookup('env', 'HOME') }}/.ssh/config"
+    create: true
     mode: "0600"
-    content: |
-      # Managed by Ansible - Workstation Setup
-
+    insertbefore: BOF
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - Workstation Setup"
+    block: |
       Host *
           # ZERO-DISK POLICY: Keys are served directly from Bitwarden memory
           IdentityAgent "{{ bw_ssh_socket }}"
